@@ -6,13 +6,13 @@ export default async function NavBar() {
   const current = await getCurrentUser();
 
   return (
-    <header className="border-b border-[var(--pcr-border)] bg-[var(--pcr-bg)] sticky top-0 z-10">
+    <header className="border-b border-[var(--pcr-navbar-border)] bg-[var(--pcr-navbar-bg)] sticky top-0 z-10">
       <div className="w-full max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <Link
           href="/"
-          className="font-display text-xl md:text-2xl text-[var(--pcr-fg)] hover:text-[var(--pcr-accent-strong)] transition-colors no-underline"
+          className="font-display text-xl md:text-2xl text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] transition-colors no-underline"
         >
-          Pro Clubs <span className="text-[var(--pcr-accent-strong)]">Ranked</span>
+          Pro Clubs <span className="text-[var(--pcr-navbar-accent)]">Ranked</span>
         </Link>
 
         <nav className="flex items-center gap-4 md:gap-6 text-sm">
@@ -20,17 +20,17 @@ export default async function NavBar() {
             <>
               <Link
                 href="/queue"
-                className="hidden sm:inline text-[var(--pcr-fg)] hover:text-[var(--pcr-accent-strong)] no-underline"
+                className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
               >
                 Queue
               </Link>
               <Link
                 href="/leaderboard"
-                className="hidden sm:inline text-[var(--pcr-fg)] hover:text-[var(--pcr-accent-strong)] no-underline"
+                className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
               >
                 Leaderboard
               </Link>
-              <span className="hidden md:inline font-[family-name:var(--font-mono)] text-xs text-[var(--pcr-muted)]">
+              <span className="hidden md:inline font-[family-name:var(--font-mono)] text-xs text-[var(--pcr-navbar-muted)]">
                 {current.profile?.username ?? current.user.email}
               </span>
               <SignOutButton />
@@ -39,13 +39,13 @@ export default async function NavBar() {
             <>
               <Link
                 href="/leaderboard"
-                className="hidden sm:inline text-[var(--pcr-fg)] hover:text-[var(--pcr-accent-strong)] no-underline"
+                className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
               >
                 Leaderboard
               </Link>
               <Link
                 href="/login"
-                className="text-[var(--pcr-fg)] hover:text-[var(--pcr-accent-strong)] no-underline"
+                className="text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
               >
                 Log in
               </Link>

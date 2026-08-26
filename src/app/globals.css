@@ -1,39 +1,56 @@
 @import "tailwindcss";
 
 /*
- * Pro Clubs Ranked brand tokens — reused from the waitlist landing page.
+ * Pro Clubs Ranked brand tokens — white / red / blue, FIFA-style.
  * Light values live on bare :root; dark overrides key off
  * prefers-color-scheme so the app matches the OS theme automatically
  * (Tailwind v4's `dark:` variant already targets that media query by
  * default, so no extra config is required).
+ *
+ * Red is the one interactive accent (links, buttons, focus rings).
+ * Blue is reserved for the navbar band, so it reads as a deliberate
+ * brand block rather than fighting red for attention everywhere.
  */
 :root {
   --pcr-bg: #ffffff;
-  --pcr-bg-elevated: #f6f5f3;
-  --pcr-fg: #14110f;
-  --pcr-muted: #6b6360;
-  --pcr-border: #e4dfda;
+  --pcr-bg-elevated: #f4f6fa;
+  --pcr-fg: #0b1526;
+  --pcr-muted: #5b6576;
+  --pcr-border: #dde2ea;
 
-  --pcr-accent: #c7430d; /* burnt-orange, tuned for light backgrounds */
-  --pcr-accent-strong: #ff5a1f; /* burnt-orange, high-contrast */
-  --pcr-gold: #c9971f; /* XP / rank tiers */
+  --pcr-accent: #b8102e; /* red, tuned for light backgrounds */
+  --pcr-accent-strong: #d81e3e; /* red, high-contrast */
+  --pcr-gold: #a97a12; /* XP / rank tiers */
   --pcr-success: #1f8a4c; /* confirmed / success states */
   --pcr-danger: #c23b3b;
+
+  /* Fixed navy navbar band — same idea as the landing page's hero: */
+  --pcr-navbar-bg: #0e1e4d;
+  --pcr-navbar-fg: #ffffff;
+  --pcr-navbar-muted: #b9c4e6;
+  --pcr-navbar-accent: #ff5468;
+  --pcr-navbar-border: rgba(255, 255, 255, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --pcr-bg: #121110;
-    --pcr-bg-elevated: #1b1917;
-    --pcr-fg: #f3efe9;
-    --pcr-muted: #a39a92;
-    --pcr-border: #322d29;
+    --pcr-bg: #0a1220;
+    --pcr-bg-elevated: #101b30;
+    --pcr-fg: #eef1f6;
+    --pcr-muted: #a3adc2;
+    --pcr-border: #223050;
 
-    --pcr-accent: #ff5a1f;
-    --pcr-accent-strong: #ff7a45;
+    --pcr-accent: #ff6b7a;
+    --pcr-accent-strong: #ff4d5e;
     --pcr-gold: #d9ab34;
     --pcr-success: #35b56e;
     --pcr-danger: #e2645f;
+
+    --pcr-navbar-bg: #050c22;
+    --pcr-navbar-fg: #ffffff;
+    --pcr-navbar-muted: #a9b6dd;
+    --pcr-navbar-accent: #ff6b7a;
+    --pcr-navbar-border: rgba(255, 255, 255, 0.12);
   }
 }
 

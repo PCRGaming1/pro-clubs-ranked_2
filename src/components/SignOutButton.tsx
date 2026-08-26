@@ -20,7 +20,7 @@ export default function SignOutButton() {
     <button
       onClick={handleSignOut}
       disabled={loading}
-      className="text-sm font-[family-name:var(--font-mono)] uppercase tracking-wide text-[var(--pcr-muted)] hover:text-[var(--pcr-accent-strong)] transition-colors disabled:opacity-50"
+      className="text-sm font-[family-name:var(--font-mono)] uppercase tracking-wide text-[var(--pcr-navbar-muted)] hover:text-[var(--pcr-navbar-accent)] transition-colors disabled:opacity-50"
     >
       {loading ? "Signing out…" : "Sign out"}
     </button>
