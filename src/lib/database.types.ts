@@ -45,6 +45,9 @@ export interface Database {
           platform: Platform | null;
           region: string | null;
           created_at: string;
+          // EA persona name (PSN/Xbox gamertag/EA ID) — see migration_003,
+          // groundwork for the experimental EA stats auto-import.
+          ea_persona_name: string | null;
         };
         Insert: {
           id: string;
@@ -52,6 +55,7 @@ export interface Database {
           platform?: Platform | null;
           region?: string | null;
           created_at?: string;
+          ea_persona_name?: string | null;
         };
         Update: {
           id?: string;
@@ -59,6 +63,7 @@ export interface Database {
           platform?: Platform | null;
           region?: string | null;
           created_at?: string;
+          ea_persona_name?: string | null;
         };
         Relationships: [];
       };
@@ -71,6 +76,9 @@ export interface Database {
           region: string | null;
           xp: number;
           created_at: string;
+          // EA club link — see migration_003, experimental (src/lib/ea.ts).
+          ea_club_id: string | null;
+          ea_platform: string | null;
         };
         Insert: {
           id?: string;
@@ -80,6 +88,8 @@ export interface Database {
           region?: string | null;
           xp?: number;
           created_at?: string;
+          ea_club_id?: string | null;
+          ea_platform?: string | null;
         };
         Update: {
           id?: string;
@@ -89,6 +99,8 @@ export interface Database {
           region?: string | null;
           xp?: number;
           created_at?: string;
+          ea_club_id?: string | null;
+          ea_platform?: string | null;
         };
         Relationships: [];
       };

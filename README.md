@@ -30,8 +30,9 @@ This guide assumes no prior Supabase or Vercel experience.
 
 **Setting up a brand-new Supabase project?** Use `supabase/schema.sql`.
 **Already have a PCR project from before this challenge-board/stats
-update?** Use `supabase/migration_002_challenges_and_stats.sql` instead —
-see "Updating an existing project" below.
+update?** Run `supabase/migration_002_challenges_and_stats.sql`, then
+`supabase/migration_003_ea_link.sql` — see "Updating an existing project"
+below.
 
 1. In your Supabase project, open the **SQL Editor** (left sidebar).
 2. Open `supabase/schema.sql` from this repo, copy its entire contents,
@@ -56,6 +57,12 @@ and run that. It only adds the new tables (`match_posts`, `match_reports`,
 allow `'disputed'`, and drops the old `queue_entries` table (deleting any
 test queue entries in it — harmless, but worth knowing). It does not touch
 or delete anything in `profiles`, `squads`, `squad_members`, or `matches`.
+
+After that, also run `supabase/migration_003_ea_link.sql` — it just adds a
+few nullable columns (`profiles.ea_persona_name`,
+`squads.ea_club_id`/`ea_platform`) used by the experimental EA stats
+auto-import described below. Safe to run any time, touches no existing
+data.
 
 ## 3. Run it locally
 
@@ -129,6 +136,7 @@ intentionally cut or simplified for now:
   adding more will just mean writing more keys into that jsonb blob, not a
   schema migration. Don't read too much into which three fields shipped
   first.
+- **EA stats auto-import is experimental groundwork only — see below.**
 - **Signup and profile creation.** A Postgres trigger
   (`handle_new_user` in `supabase/schema.sql`) creates the `profiles` row
   automatically when someone signs up, using the username passed in at
@@ -141,6 +149,47 @@ intentionally cut or simplified for now:
   matchmaking actually uses.
 - **RLS policies are starter policies**, written for an early MVP — see
   the comment block at the top of `supabase/schema.sql`.
+
+## EA stats auto-import (experimental)
+
+There is no official, documented EA API for Pro Clubs. Every Discord stats
+bot and stat-tracking site out there (the kind of bot referenced when this
+feature was requested) works by calling the same undocumented endpoints
+EA's own web app uses internally, under `proclubs.ea.com`. This repo now
+has the groundwork to do the same thing, laid out but **not turned on**:
+
+- `supabase/migration_003_ea_link.sql` adds `profiles.ea_persona_name`
+  (a player's exact PSN/Xbox gamertag/EA ID) and
+  `squads.ea_club_id`/`ea_platform` (which EA club a squad corresponds
+  to).
+- The `/profile` page lets a player save their own persona name.
+- The `/squad/[id]` page has a captain-only panel to save a squad's EA
+  club ID/platform, plus a "Preview EA sync" button that calls
+  `/api/ea/sync-preview` and shows the raw JSON EA returns for that club's
+  recent matches — for inspecting the real response shape, not for
+  populating anything.
+- `src/lib/ea.ts` is the actual client code, with the two endpoints found
+  in public write-ups: club search (`/allTimeLeaderboard/search`) and club
+  match history (`/clubs/matches`).
+
+**Why it stops at "preview" and doesn't auto-fill `player_match_stats`
+yet:** this was written and tested from an environment with no network
+route to `proclubs.ea.com`, so the response shape in `src/lib/ea.ts` is a
+best guess from community documentation, not a verified contract. Before
+building an auto-fill pipeline on top of it:
+
+1. Deploy this (Vercel has normal internet access) and use the "Preview
+   EA sync" button on a squad linked to a real EA club to see an actual
+   response.
+2. Check the field names in that response against the guesses in
+   `src/lib/ea.ts` (`EaClubMatch`, `EaClubSearchResult`) and adjust them.
+3. Only then wire a real sync into `player_match_stats` — and keep manual
+   entry as the fallback regardless, since these endpoints have gone down
+   for extended periods before (weeks, on EA's side) with no
+   communication from EA.
+
+Treat this entire feature as "nice to have, never load-bearing" — self-
+reported stats are what the leaderboard actually runs on.
 
 ## Tech stack
 

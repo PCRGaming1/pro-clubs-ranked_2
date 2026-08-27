@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  getCurrentUser,
   getSquadById,
   getSquadMembers,
   getRecentMatchesForSquad,
   getTopProsForSquad,
 } from "@/lib/data";
 import TierBadge from "@/components/TierBadge";
+import EaClubLinkClient from "./EaClubLinkClient";
 
 export const dynamic = "force-dynamic";
 
@@ -20,11 +22,14 @@ export default async function SquadPage({
 
   if (!squad) notFound();
 
-  const [members, matches, topPros] = await Promise.all([
+  const [current, members, matches, topPros] = await Promise.all([
+    getCurrentUser(),
     getSquadMembers(squad.id),
     getRecentMatchesForSquad(squad.id),
     getTopProsForSquad(squad.id),
   ]);
+
+  const isCaptain = current?.user.id === squad.captain_id;
 
   return (
     <div>
@@ -147,6 +152,14 @@ export default async function SquadPage({
           </div>
         )}
       </section>
+
+      {isCaptain && (
+        <EaClubLinkClient
+          squadId={squad.id}
+          initialClubId={squad.ea_club_id}
+          initialPlatform={squad.ea_platform}
+        />
+      )}
     </div>
   );
 }

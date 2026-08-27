@@ -1,4 +1,5 @@
 import { getCurrentUser, getPlayerStatsForUser } from "@/lib/data";
+import EaPersonaLinkClient from "./EaPersonaLinkClient";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,8 @@ export default async function ProfilePage() {
           you can log your own goals, assists, and MOTM from its match page.
         </p>
       )}
+
+      <EaPersonaLinkClient initialValue={current.profile?.ea_persona_name ?? null} />
     </div>
   );
 }

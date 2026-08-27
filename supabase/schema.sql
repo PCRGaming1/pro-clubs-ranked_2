@@ -38,7 +38,10 @@ create table if not exists public.profiles (
   username text unique not null,
   platform text check (platform in ('ps','xbox','pc')),
   region text,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- EA persona name (PSN/Xbox gamertag/EA ID) — groundwork for the
+  -- experimental EA stats auto-import, see README. Not used yet.
+  ea_persona_name text
 );
 
 alter table public.profiles enable row level security;
@@ -95,7 +98,11 @@ create table if not exists public.squads (
   platform text,
   region text,
   xp int not null default 0,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- EA club link — groundwork for the experimental EA stats auto-import,
+  -- see README and supabase/migration_003_ea_link.sql. Not used yet.
+  ea_club_id text,
+  ea_platform text
 );
 
 alter table public.squads enable row level security;
