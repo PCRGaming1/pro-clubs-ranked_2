@@ -5,13 +5,19 @@ import { XP_WIN, XP_LOSS } from "@/lib/xp";
 export const dynamic = "force-dynamic";
 
 /**
- * Report a match result.
+ * Report (or update) your squad's claimed winner for a match.
  *
- * KNOWN LIMITATION (documented in README too): first report wins. Whoever
- * reports first sets the result; there is no confirmation step from the
- * other squad and no dispute/override flow. Fine for an MVP, not fine
- * forever — a real version needs both squads to confirm (or an admin
- * override) before a result is treated as final.
+ * Both squads must independently report before anything is final: each
+ * squad gets (at most) one row in `match_reports`, upserted here so a
+ * squad can correct a mistaken claim by reporting again. Once both squads
+ * have a row for this match:
+ *   - if their claims agree, the match is confirmed and XP is awarded
+ *     exactly once (see the conditional update below for the guard against
+ *     double-awarding on a race or a re-run);
+ *   - if they disagree, the match is marked 'disputed'. No XP is awarded
+ *     and there's no auto-resolution — that's a deliberate, documented
+ *     limitation (see README). Either squad can still re-report to correct
+ *     itself, which re-runs this check and can resolve the dispute.
  */
 export async function POST(
   request: NextRequest,
@@ -51,7 +57,10 @@ export async function POST(
   }
 
   if (match.status === "confirmed") {
-    return NextResponse.json({ error: "This match has already been reported." }, { status: 409 });
+    return NextResponse.json(
+      { error: "This match's result is already confirmed." },
+      { status: 409 }
+    );
   }
 
   if (winnerSquadId !== match.squad_a_id && winnerSquadId !== match.squad_b_id) {
@@ -61,67 +70,108 @@ export async function POST(
     );
   }
 
-  // Verify the requester belongs to one of the two squads in the match.
+  const squadIds = [match.squad_a_id, match.squad_b_id].filter(Boolean) as string[];
+
+  // Verify the requester belongs to one of the two squads in the match,
+  // and find out which one — that's whose claim this report call is for.
   const { data: membership } = await supabase
     .from("squad_members")
     .select("squad_id")
     .eq("user_id", user.id)
-    .in("squad_id", [match.squad_a_id, match.squad_b_id].filter(Boolean) as string[]);
+    .in("squad_id", squadIds);
 
-  if (!membership || membership.length === 0) {
+  const reporterSquadId = membership?.[0]?.squad_id;
+
+  if (!reporterSquadId) {
     return NextResponse.json(
       { error: "You must belong to one of the two squads in this match to report it." },
       { status: 403 }
     );
   }
 
-  const loserSquadId = winnerSquadId === match.squad_a_id ? match.squad_b_id : match.squad_a_id;
-
-  const { error: updateMatchError } = await supabase
-    .from("matches")
-    .update({
-      status: "confirmed",
+  const { error: upsertError } = await supabase.from("match_reports").upsert(
+    {
+      match_id: matchId,
+      squad_id: reporterSquadId,
       winner_squad_id: winnerSquadId,
       reported_by: user.id,
-    })
-    .eq("id", matchId);
+    },
+    { onConflict: "match_id,squad_id" }
+  );
 
-  if (updateMatchError) {
-    return NextResponse.json({ error: updateMatchError.message }, { status: 500 });
+  if (upsertError) {
+    return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
 
-  // Award XP. Not done inside a single transaction/RPC — see the race
-  // condition note in /api/queue/join for the same caveat class; here the
-  // risk is limited to two near-simultaneous report calls on the same
-  // match, which the `status === 'confirmed'` check above mostly guards
-  // against (the second call will see status already confirmed and 409).
-  const { data: winnerSquad } = await supabase
-    .from("squads")
-    .select("xp")
-    .eq("id", winnerSquadId)
-    .maybeSingle();
+  const { data: reports } = await supabase
+    .from("match_reports")
+    .select("*")
+    .eq("match_id", matchId);
 
-  if (winnerSquad) {
-    await supabase
-      .from("squads")
-      .update({ xp: winnerSquad.xp + XP_WIN })
-      .eq("id", winnerSquadId);
+  const reportA = reports?.find((r) => r.squad_id === match.squad_a_id);
+  const reportB = reports?.find((r) => r.squad_id === match.squad_b_id);
+
+  if (!reportA || !reportB) {
+    // Still waiting on the other squad to report.
+    return NextResponse.json({ ok: true, status: "pending" });
   }
 
-  if (loserSquadId) {
-    const { data: loserSquad } = await supabase
-      .from("squads")
-      .select("xp")
-      .eq("id", loserSquadId)
-      .maybeSingle();
+  if (reportA.winner_squad_id === reportB.winner_squad_id) {
+    // Agreement — confirm the match. The `.in("status", [...])` guard
+    // ensures only one caller ever wins this transition (e.g. if both
+    // squads' report calls raced each other right at the point both rows
+    // existed), so XP below only ever gets awarded once per match.
+    const { data: confirmedRows } = await supabase
+      .from("matches")
+      .update({ status: "confirmed", winner_squad_id: reportA.winner_squad_id })
+      .eq("id", matchId)
+      .in("status", ["pending", "disputed"])
+      .select();
 
-    if (loserSquad) {
-      await supabase
+    if (confirmedRows && confirmedRows.length > 0) {
+      const winnerSquadId2 = reportA.winner_squad_id;
+      const loserSquadId =
+        winnerSquadId2 === match.squad_a_id ? match.squad_b_id : match.squad_a_id;
+
+      const { data: winnerSquad } = await supabase
         .from("squads")
-        .update({ xp: loserSquad.xp + XP_LOSS })
-        .eq("id", loserSquadId);
+        .select("xp")
+        .eq("id", winnerSquadId2)
+        .maybeSingle();
+
+      if (winnerSquad) {
+        await supabase
+          .from("squads")
+          .update({ xp: winnerSquad.xp + XP_WIN })
+          .eq("id", winnerSquadId2);
+      }
+
+      if (loserSquadId) {
+        const { data: loserSquad } = await supabase
+          .from("squads")
+          .select("xp")
+          .eq("id", loserSquadId)
+          .maybeSingle();
+
+        if (loserSquad) {
+          await supabase
+            .from("squads")
+            .update({ xp: loserSquad.xp + XP_LOSS })
+            .eq("id", loserSquadId);
+        }
+      }
     }
+
+    return NextResponse.json({ ok: true, status: "confirmed" });
   }
 
-  return NextResponse.json({ ok: true });
+  // Disagreement — mark disputed (unless it's already been confirmed by a
+  // concurrent request, which the `.in()` filter guards against).
+  await supabase
+    .from("matches")
+    .update({ status: "disputed" })
+    .eq("id", matchId)
+    .in("status", ["pending", "disputed"]);
+
+  return NextResponse.json({ ok: true, status: "disputed" });
 }

@@ -4,6 +4,7 @@ import {
   getSquadById,
   getSquadMembers,
   getRecentMatchesForSquad,
+  getTopProsForSquad,
 } from "@/lib/data";
 import TierBadge from "@/components/TierBadge";
 
@@ -19,9 +20,10 @@ export default async function SquadPage({
 
   if (!squad) notFound();
 
-  const [members, matches] = await Promise.all([
+  const [members, matches, topPros] = await Promise.all([
     getSquadMembers(squad.id),
     getRecentMatchesForSquad(squad.id),
+    getTopProsForSquad(squad.id),
   ]);
 
   return (
@@ -77,10 +79,10 @@ export default async function SquadPage({
         {matches.length === 0 ? (
           <p className="text-sm text-[var(--pcr-muted)]">
             No matches yet.{" "}
-            <Link href="/queue" className="text-[var(--pcr-accent-strong)]">
-              Join the queue
+            <Link href="/challenges" className="text-[var(--pcr-accent-strong)]">
+              Find a match
             </Link>{" "}
-            to find one.
+            to get started.
           </p>
         ) : (
           <ul className="space-y-2">
@@ -96,6 +98,53 @@ export default async function SquadPage({
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <h2 className="font-display text-xl mb-3">Top Pros</h2>
+        <p className="text-xs text-[var(--pcr-muted)] mb-3">
+          Squad members ranked by total goals across confirmed matches.
+        </p>
+        {topPros.length === 0 ? (
+          <p className="text-sm text-[var(--pcr-muted)]">
+            No player stats logged yet for this squad.
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-[var(--pcr-border)]">
+            <table className="w-full text-sm">
+              <thead className="bg-[var(--pcr-bg-elevated)] text-left">
+                <tr>
+                  <th className="px-4 py-2 font-[family-name:var(--font-mono)] uppercase text-xs text-[var(--pcr-muted)]">
+                    #
+                  </th>
+                  <th className="px-4 py-2 font-[family-name:var(--font-mono)] uppercase text-xs text-[var(--pcr-muted)]">
+                    Player
+                  </th>
+                  <th className="px-4 py-2 font-[family-name:var(--font-mono)] uppercase text-xs text-[var(--pcr-muted)] text-right">
+                    Goals
+                  </th>
+                  <th className="px-4 py-2 font-[family-name:var(--font-mono)] uppercase text-xs text-[var(--pcr-muted)] text-right">
+                    Assists
+                  </th>
+                  <th className="px-4 py-2 font-[family-name:var(--font-mono)] uppercase text-xs text-[var(--pcr-muted)] text-right">
+                    MOTM
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {topPros.map((p, i) => (
+                  <tr key={p.user_id} className="border-t border-[var(--pcr-border)]">
+                    <td className="px-4 py-2 font-mono-stat text-[var(--pcr-muted)]">{i + 1}</td>
+                    <td className="px-4 py-2">{p.username ?? "—"}</td>
+                    <td className="px-4 py-2 text-right font-mono-stat">{p.goals}</td>
+                    <td className="px-4 py-2 text-right font-mono-stat">{p.assists}</td>
+                    <td className="px-4 py-2 text-right font-mono-stat">{p.motm}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>

@@ -19,10 +19,10 @@ export default async function NavBar() {
           {current ? (
             <>
               <Link
-                href="/queue"
+                href="/challenges"
                 className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
               >
-                Queue
+                Find a Match
               </Link>
               <Link
                 href="/leaderboard"

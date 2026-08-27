@@ -5,6 +5,8 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Squad = Database["public"]["Tables"]["squads"]["Row"];
 export type SquadMember = Database["public"]["Tables"]["squad_members"]["Row"];
 export type MatchRow = Database["public"]["Tables"]["matches"]["Row"];
+export type MatchPostRow = Database["public"]["Tables"]["match_posts"]["Row"];
+export type MatchReportRow = Database["public"]["Tables"]["match_reports"]["Row"];
 
 /** Current authenticated user + their profile row, or null if logged out. */
 export async function getCurrentUser() {
@@ -126,4 +128,125 @@ export async function getMatchById(id: string) {
     .eq("id", id)
     .maybeSingle();
   return match as MatchRow | null;
+}
+
+export interface MatchPostWithSquad extends MatchPostRow {
+  squad_name: string | null;
+}
+
+/**
+ * Open posts on the challenge board, newest first, with the poster
+ * squad's name attached. Done as two queries and joined in application
+ * code (same reasoning as getSquadMembers above — the hand-written
+ * Database type doesn't encode FK relationship metadata for typed embeds).
+ */
+export async function getOpenMatchPosts(): Promise<MatchPostWithSquad[]> {
+  const supabase = await createClient();
+  const { data: posts } = await supabase
+    .from("match_posts")
+    .select("*")
+    .eq("status", "open")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (!posts || posts.length === 0) return [];
+
+  const squadIds = [...new Set(posts.map((p) => p.squad_id).filter(Boolean))] as string[];
+  const { data: squads } = await supabase.from("squads").select("id, name").in("id", squadIds);
+  const nameById = new Map((squads ?? []).map((s) => [s.id, s.name]));
+
+  return posts.map((p) => ({
+    ...p,
+    squad_name: p.squad_id ? nameById.get(p.squad_id) ?? null : null,
+  }));
+}
+
+/** Both squads' claims (if any) for a match. At most two rows. */
+export async function getMatchReportsForMatch(matchId: string): Promise<MatchReportRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("match_reports").select("*").eq("match_id", matchId);
+  return (data ?? []) as MatchReportRow[];
+}
+
+export interface PlayerMatchStatWithUsername {
+  user_id: string;
+  squad_id: string;
+  username: string | null;
+  goals: number;
+  assists: number;
+  motm: boolean;
+}
+
+/**
+ * Logged player stats for one match, with usernames attached. Reads the
+ * `stats` jsonb column defensively (see the API route that writes it) so a
+ * missing key just defaults rather than throwing.
+ */
+export async function getPlayerMatchStatsForMatch(
+  matchId: string
+): Promise<PlayerMatchStatWithUsername[]> {
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("player_match_stats")
+    .select("user_id, squad_id, stats")
+    .eq("match_id", matchId);
+
+  if (!rows || rows.length === 0) return [];
+
+  const userIds = rows.map((r) => r.user_id);
+  const { data: profiles } = await supabase.from("profiles").select("id, username").in("id", userIds);
+  const usernameById = new Map((profiles ?? []).map((p) => [p.id, p.username]));
+
+  return rows.map((r) => {
+    const stats = (r.stats ?? {}) as { goals?: number; assists?: number; motm?: boolean };
+    return {
+      user_id: r.user_id,
+      squad_id: r.squad_id,
+      username: usernameById.get(r.user_id) ?? null,
+      goals: Number(stats.goals ?? 0),
+      assists: Number(stats.assists ?? 0),
+      motm: Boolean(stats.motm),
+    };
+  });
+}
+
+export interface TopPro {
+  user_id: string;
+  username: string | null;
+  goals: number;
+  assists: number;
+  motm: number;
+}
+
+/**
+ * "Top Pros" for a squad: members ranked by total goals across their
+ * player_match_stats rows for that squad, summed across every confirmed
+ * match they've logged stats for.
+ */
+export async function getTopProsForSquad(squadId: string): Promise<TopPro[]> {
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("player_match_stats")
+    .select("user_id, stats")
+    .eq("squad_id", squadId);
+
+  if (!rows || rows.length === 0) return [];
+
+  const totals = new Map<string, { goals: number; assists: number; motm: number }>();
+  for (const row of rows) {
+    const stats = (row.stats ?? {}) as { goals?: number; assists?: number; motm?: boolean };
+    const current = totals.get(row.user_id) ?? { goals: 0, assists: 0, motm: 0 };
+    current.goals += Number(stats.goals ?? 0);
+    current.assists += Number(stats.assists ?? 0);
+    current.motm += stats.motm ? 1 : 0;
+    totals.set(row.user_id, current);
+  }
+
+  const userIds = [...totals.keys()];
+  const { data: profiles } = await supabase.from("profiles").select("id, username").in("id", userIds);
+  const usernameById = new Map((profiles ?? []).map((p) => [p.id, p.username]));
+
+  return [...totals.entries()]
+    .map(([user_id, t]) => ({ user_id, username: usernameById.get(user_id) ?? null, ...t }))
+    .sort((a, b) => b.goals - a.goals || b.assists - a.assists);
 }

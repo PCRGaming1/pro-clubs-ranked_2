@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { primaryButtonClass, errorTextClass } from "@/components/form";
+import { primaryButtonClass, errorTextClass, successTextClass } from "@/components/form";
 
 type SquadLite = { id: string; name: string };
 
@@ -10,15 +10,18 @@ export default function ReportResultClient({
   matchId,
   squadA,
   squadB,
+  ownWinnerId,
 }: {
   matchId: string;
   squadA: SquadLite;
   squadB: SquadLite;
+  ownWinnerId: string | null;
 }) {
   const router = useRouter();
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(ownWinnerId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [justSubmitted, setJustSubmitted] = useState(false);
 
   async function handleReport() {
     if (!selected) return;
@@ -39,6 +42,8 @@ export default function ReportResultClient({
         return;
       }
 
+      setJustSubmitted(true);
+      setLoading(false);
       router.refresh();
     } catch {
       setError("Network error — try again.");
@@ -49,8 +54,18 @@ export default function ReportResultClient({
   return (
     <div className="rounded-lg border border-[var(--pcr-border)] bg-[var(--pcr-bg-elevated)] p-4">
       <h2 className="text-sm font-[family-name:var(--font-mono)] uppercase tracking-wide text-[var(--pcr-muted)] mb-3">
-        Report result
+        {ownWinnerId ? "Your squad's claim" : "Report result"}
       </h2>
+
+      {ownWinnerId && !justSubmitted && (
+        <p className="text-sm mb-3">
+          Your squad reported{" "}
+          <strong>{ownWinnerId === squadA.id ? squadA.name : squadB.name} won</strong>. Pick
+          again below if that was a mistake.
+        </p>
+      )}
+      {justSubmitted && <p className={`${successTextClass} mb-3`}>Claim submitted.</p>}
+
       <div className="grid grid-cols-2 gap-2 mb-4">
         {[squadA, squadB].map((s) => (
           <button
@@ -71,7 +86,7 @@ export default function ReportResultClient({
       {error && <p className={`${errorTextClass} mb-3`}>{error}</p>}
 
       <button onClick={handleReport} disabled={!selected || loading} className={primaryButtonClass}>
-        {loading ? "Reporting…" : "Confirm result"}
+        {loading ? "Submitting…" : ownWinnerId ? "Update claim" : "Submit claim"}
       </button>
     </div>
   );

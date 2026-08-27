@@ -4,12 +4,27 @@
 -- IMPORTANT: these are STARTER Row Level Security policies for an early MVP.
 -- They aim to be "reasonable and not wide open," not audited or complete.
 -- Before real users and real accounts depend on this, have someone review:
---   - the queue_entries / matches policies for abuse potential (e.g. a user
---     spamming queue joins, or reporting bogus results for matches they
+--   - the match_posts / matches / match_reports policies for abuse
+--     potential (e.g. a user spamming posts, accepting posts they
+--     shouldn't be able to, or reporting bogus results for matches they
 --     aren't really part of),
 --   - whether squad membership changes (kicks, leaves, captaincy transfer)
 --     need their own policies (none exist yet — there's no UI for them),
 --   - rate limiting / anti-abuse, which Postgres RLS does not give you.
+--
+-- Why match_posts / match_reports / player_match_stats need similarly
+-- permissive policies to the old queue_entries table: there's no
+-- service-role key available client-side (see .env.local.example — only
+-- the anon key is used), so every API route runs as the requesting user,
+-- not as an admin. That means routes which have to touch a row belonging
+-- to squad they aren't a member of (accepting someone else's match post,
+-- confirming a match both squads are in) need a broader "any authenticated
+-- user can update" policy rather than a strict "only your own row" one.
+-- match_reports and player_match_stats are the exception — those tables
+-- are structured so every write really is to the acting user's own row
+-- (one report row per squad you belong to, one stats row per player per
+-- match), so they get tighter ownership-based policies instead. See the
+-- comments on each table below for specifics.
 -- =============================================================================
 
 -- Needed for gen_random_uuid()
@@ -98,7 +113,7 @@ create policy "a user can create a squad naming themselves captain"
 -- NOTE: this is broader than "only the captain can edit their own squad."
 -- /api/matches/[id]/report has to award XP to BOTH squads in a match —
 -- including the squad the reporting user is NOT a captain (or even a
--- member) of. As with queue_entries above, there's no service-role key in
+-- member) of. As with match_posts below, there's no service-role key in
 -- this app, so this runs as the requesting user. Plain RLS policies can't
 -- easily express "anyone can change the xp column, but only the captain
 -- can change name/platform/region" (that needs column-level privileges or
@@ -142,55 +157,6 @@ create policy "a user can remove themself from a squad"
   using (auth.uid() = user_id);
 
 -- -----------------------------------------------------------------------------
--- queue_entries
--- -----------------------------------------------------------------------------
-create table if not exists public.queue_entries (
-  id uuid primary key default gen_random_uuid(),
-  squad_id uuid references public.squads(id),
-  size text not null,
-  platform text,
-  region text,
-  status text not null default 'waiting' check (status in ('waiting','matched','cancelled')),
-  created_at timestamptz not null default now()
-);
-
-alter table public.queue_entries enable row level security;
-
-create policy "queue entries are readable by any authenticated user"
-  on public.queue_entries for select
-  to authenticated
-  using (true);
-
-create policy "a member of a squad can queue that squad"
-  on public.queue_entries for insert
-  to authenticated
-  with check (
-    exists (
-      select 1 from public.squad_members sm
-      where sm.squad_id = queue_entries.squad_id
-        and sm.user_id = auth.uid()
-    )
-  );
-
--- NOTE: this is intentionally broader than "only your own squad's entry."
--- /api/queue/join has to mark BOTH sides of a match as 'matched' —
--- including the opponent squad's entry, which the requesting user is not
--- a member of. There's no service-role key in this app (see
--- .env.local.example — only the anon key is used), so the match-making
--- route runs as the requesting user, not as an admin. Since queue_entries
--- rows don't hold sensitive data (they're already readable by any
--- authenticated user via the select policy above), letting any
--- authenticated user update a queue_entries row's status is a reasonable
--- MVP trade-off. Tighten this (e.g. move matchmaking into a
--- SECURITY DEFINER Postgres function) before this matters for abuse
--- resistance.
-create policy "any authenticated user can update a queue entry's status"
-  on public.queue_entries for update
-  to authenticated
-  using (true)
-  with check (true);
-
--- -----------------------------------------------------------------------------
 -- matches
 -- -----------------------------------------------------------------------------
 create table if not exists public.matches (
@@ -200,8 +166,14 @@ create table if not exists public.matches (
   region text,
   squad_a_id uuid references public.squads(id),
   squad_b_id uuid references public.squads(id),
-  status text not null default 'pending' check (status in ('pending','confirmed')),
+  status text not null default 'pending' check (status in ('pending','confirmed','disputed')),
   winner_squad_id uuid references public.squads(id),
+  -- Legacy column from the old "first report wins" flow. No longer
+  -- written by the app — see match_reports.reported_by below, which
+  -- tracks who reported on behalf of each squad individually. Kept here
+  -- (rather than dropped) so this file matches what
+  -- migration_002_challenges_and_stats.sql leaves an existing database
+  -- with, which does not touch the matches table's columns.
   reported_by uuid references public.profiles(id),
   created_at timestamptz not null default now()
 );
@@ -215,7 +187,7 @@ create policy "matches are readable by any authenticated user"
 
 -- Match rows are created by server-side API routes using the same
 -- authenticated user context, on behalf of a member of one of the two
--- squads being queued/matched.
+-- squads being matched (via a posted-and-accepted challenge).
 create policy "a member of either squad can insert a match"
   on public.matches for insert
   to authenticated
@@ -244,3 +216,165 @@ create policy "a member of either squad can update a match to report a result"
         and sm.squad_id in (matches.squad_a_id, matches.squad_b_id)
     )
   );
+
+-- -----------------------------------------------------------------------------
+-- match_posts — the "challenge board": a squad posts an open request for a
+-- match, which sits visible until another squad accepts it (or the poster
+-- cancels it). Replaces the old queue_entries auto-matchmaking table.
+-- -----------------------------------------------------------------------------
+create table if not exists public.match_posts (
+  id uuid primary key default gen_random_uuid(),
+  squad_id uuid references public.squads(id),
+  size text not null,
+  platform text,
+  region text,
+  note text,
+  status text not null default 'open' check (status in ('open','accepted','cancelled')),
+  accepted_by_squad_id uuid references public.squads(id),
+  match_id uuid references public.matches(id),
+  created_at timestamptz not null default now()
+);
+
+alter table public.match_posts enable row level security;
+
+create policy "match posts are readable by any authenticated user"
+  on public.match_posts for select
+  to authenticated
+  using (true);
+
+create policy "a member of a squad can post a challenge for that squad"
+  on public.match_posts for insert
+  to authenticated
+  with check (
+    exists (
+      select 1 from public.squad_members sm
+      where sm.squad_id = match_posts.squad_id
+        and sm.user_id = auth.uid()
+    )
+  );
+
+-- NOTE: intentionally broader than "only your own post." /api/posts/[id]/accept
+-- has to flip a DIFFERENT squad's post from 'open' to 'accepted' (setting
+-- accepted_by_squad_id and match_id) — the accepting user is never a
+-- member of the poster's squad. Same MVP trade-off as queue_entries had:
+-- no service-role key here, so allow any authenticated user to update a
+-- match_posts row and rely on the app code's atomic
+-- `UPDATE ... WHERE status = 'open'` (see that route) to make accept-locking
+-- and self-cancel safe. Tighten this (e.g. a SECURITY DEFINER function)
+-- before this matters for abuse resistance.
+create policy "any authenticated user can update a match post"
+  on public.match_posts for update
+  to authenticated
+  using (true)
+  with check (true);
+
+-- -----------------------------------------------------------------------------
+-- match_reports — each squad's claimed winner for a match. Both squads
+-- must report and agree before /api/matches/[id]/report confirms the match
+-- and awards XP; disagreement marks the match 'disputed' instead.
+-- Replaces the old "first report wins" flow (matches.reported_by).
+-- -----------------------------------------------------------------------------
+create table if not exists public.match_reports (
+  match_id uuid references public.matches(id),
+  squad_id uuid references public.squads(id),
+  winner_squad_id uuid references public.squads(id),
+  reported_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  primary key (match_id, squad_id)
+);
+
+alter table public.match_reports enable row level security;
+
+-- Unlike match_posts, every write here really is "the acting user's own
+-- row" (one row per squad they belong to), so this can stay a strict
+-- ownership policy instead of the broad "any authenticated user" pattern
+-- used above.
+create policy "match reports are readable by any authenticated user"
+  on public.match_reports for select
+  to authenticated
+  using (true);
+
+create policy "a member of the squad can report their own match claim"
+  on public.match_reports for insert
+  to authenticated
+  with check (
+    reported_by = auth.uid()
+    and exists (
+      select 1 from public.squad_members sm
+      where sm.squad_id = match_reports.squad_id
+        and sm.user_id = auth.uid()
+    )
+    and exists (
+      select 1 from public.matches m
+      where m.id = match_reports.match_id
+        and match_reports.squad_id in (m.squad_a_id, m.squad_b_id)
+    )
+  );
+
+create policy "a member of the squad can update their own match claim"
+  on public.match_reports for update
+  to authenticated
+  using (
+    exists (
+      select 1 from public.squad_members sm
+      where sm.squad_id = match_reports.squad_id
+        and sm.user_id = auth.uid()
+    )
+  )
+  with check (
+    reported_by = auth.uid()
+    and exists (
+      select 1 from public.squad_members sm
+      where sm.squad_id = match_reports.squad_id
+        and sm.user_id = auth.uid()
+    )
+  );
+
+-- -----------------------------------------------------------------------------
+-- player_match_stats — a player's own logged stats for one confirmed
+-- match. `stats` is jsonb and intentionally open-ended: the current app
+-- only writes {goals, assists, motm}, a small starter set pending a fuller
+-- field list. See src/app/api/matches/[id]/stats/route.ts.
+-- -----------------------------------------------------------------------------
+create table if not exists public.player_match_stats (
+  id uuid primary key default gen_random_uuid(),
+  match_id uuid references public.matches(id),
+  user_id uuid references public.profiles(id),
+  squad_id uuid references public.squads(id),
+  stats jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  unique (match_id, user_id)
+);
+
+alter table public.player_match_stats enable row level security;
+
+create policy "player match stats are readable by any authenticated user"
+  on public.player_match_stats for select
+  to authenticated
+  using (true);
+
+-- Every write here is to the acting user's own row (one per player per
+-- match), so — like match_reports — this stays a strict ownership policy.
+create policy "a player can log their own stats for a confirmed match they were in"
+  on public.player_match_stats for insert
+  to authenticated
+  with check (
+    user_id = auth.uid()
+    and exists (
+      select 1 from public.squad_members sm
+      where sm.squad_id = player_match_stats.squad_id
+        and sm.user_id = auth.uid()
+    )
+    and exists (
+      select 1 from public.matches m
+      where m.id = player_match_stats.match_id
+        and m.status = 'confirmed'
+        and player_match_stats.squad_id in (m.squad_a_id, m.squad_b_id)
+    )
+  );
+
+create policy "a player can update their own logged stats"
+  on public.player_match_stats for update
+  to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());

@@ -1,5 +1,5 @@
 // Shared Tailwind class strings for form controls, kept in one place so
-// every auth/queue/squad form looks the same.
+// every auth/challenge/squad form looks the same.
 
 export const inputClass =
   "w-full rounded-md border border-[var(--pcr-border)] bg-[var(--pcr-bg)] px-3 py-2 text-sm text-[var(--pcr-fg)] placeholder:text-[var(--pcr-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--pcr-accent-strong)] focus:border-transparent";

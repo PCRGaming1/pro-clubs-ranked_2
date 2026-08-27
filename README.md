@@ -1,9 +1,12 @@
 # Pro Clubs Ranked (PCR)
 
 A matchmaking + XP ladder web app for EA FC Pro Clubs (11-a-side club mode).
-Players create a squad, queue up for a match at a given size (2v2 up to
-11v11), get paired against another squad, and report the result to climb
-an XP-based tier ladder (Bronze / Silver / Gold / Elite).
+Players create a squad, post an open challenge at a given size (2v2 up to
+11v11) on the challenge board, get accepted by another squad, and report
+the result — once both squads agree — to climb an XP-based tier ladder
+(Bronze / Silver / Gold / Elite). Players can also log their own stats
+(goals, assists, man of the match) for a confirmed match, feeding a
+squad-level "Top Pros" leaderboard.
 
 **There are no cash prizes, wagering, or paid entry features in this app —
 that's deliberate.** Real-money matches on a football sim raise UK gambling
@@ -25,17 +28,34 @@ This guide assumes no prior Supabase or Vercel experience.
 
 ## 2. Set up the database
 
+**Setting up a brand-new Supabase project?** Use `supabase/schema.sql`.
+**Already have a PCR project from before this challenge-board/stats
+update?** Use `supabase/migration_002_challenges_and_stats.sql` instead —
+see "Updating an existing project" below.
+
 1. In your Supabase project, open the **SQL Editor** (left sidebar).
 2. Open `supabase/schema.sql` from this repo, copy its entire contents,
    and paste it into a new SQL Editor query.
-3. Click **Run**. This creates all five tables (`profiles`, `squads`,
-   `squad_members`, `queue_entries`, `matches`), turns on Row Level
-   Security with starter access policies, and sets up a trigger that
-   automatically creates a `profiles` row whenever someone signs up.
+3. Click **Run**. This creates all seven tables (`profiles`, `squads`,
+   `squad_members`, `matches`, `match_posts`, `match_reports`,
+   `player_match_stats`), turns on Row Level Security with starter access
+   policies, and sets up a trigger that automatically creates a `profiles`
+   row whenever someone signs up.
 
    Read the comment block at the top of `schema.sql` — the RLS policies
    are a reasonable starting point for an MVP, not an audited security
    model. Have someone review them before you have real users.
+
+### Updating an existing project
+
+If you already ran the old `schema.sql` against a live Supabase project
+and have real squads/matches/accounts in it, don't re-run the full
+`schema.sql` — instead open `supabase/migration_002_challenges_and_stats.sql`
+and run that. It only adds the new tables (`match_posts`, `match_reports`,
+`player_match_stats`) and their RLS policies, widens `matches.status` to
+allow `'disputed'`, and drops the old `queue_entries` table (deleting any
+test queue entries in it — harmless, but worth knowing). It does not touch
+or delete anything in `profiles`, `squads`, `squad_members`, or `matches`.
 
 ## 3. Run it locally
 
@@ -53,8 +73,9 @@ This guide assumes no prior Supabase or Vercel experience.
    npm run dev
    ```
 4. Open [http://localhost:3000](http://localhost:3000). Sign up for an
-   account, create a squad, and try the queue with a second account in
-   another browser (or an incognito window) to see matchmaking work.
+   account, create a squad, and post a match on the challenge board with a
+   second account in another browser (or an incognito window) to accept it
+   and see a match get created.
 
 ## 4. Deploy to Vercel
 
@@ -82,20 +103,32 @@ intentionally cut or simplified for now:
   to one squad and doesn't yet have UI for inviting/removing members.
   Realistically an 11-a-side club needs an invite flow, a way to remove
   players, and captaincy transfer — none of that exists yet.
-- **Match results are first-report-wins.** Whichever squad reports a
-  result first sets it; there's no confirmation step from the other squad
-  and no dispute/admin-override flow. A real version needs both squads to
-  confirm a result (or an admin override) before XP is awarded.
-- **Matchmaking has a known race condition.** `/api/queue/join` reads
-  "is there a waiting opponent?" and then writes a match in two separate
-  steps, not inside a single atomic transaction. Two squads joining the
-  same queue (same size/platform/region) at almost the same instant could
-  in theory both match against the same opponent, or both end up waiting
-  when one should have matched the other. A production version should do
-  this inside a Postgres function (RPC) using row locking
-  (`SELECT ... FOR UPDATE SKIP LOCKED` or similar) so the whole "find
-  opponent, create match, mark entries matched" sequence is atomic. The
-  simple version is what's shipped here.
+- **Disputed results have no resolution flow.** Both squads must now
+  report a match's result and agree before XP is awarded
+  (`/api/matches/[id]/report`); if they disagree, the match is marked
+  `disputed` and just sits there — there's no admin override, no
+  re-vote, and no auto-resolution. In practice a squad noticing a
+  disagreement can re-report to correct its own claim (which can resolve
+  the dispute if it was a simple mistake), but nothing forces that to
+  happen. A real version needs an actual dispute-resolution flow
+  (admin review, evidence upload, majority vote among players — something).
+- **The challenge board's accept step is now safe against the old
+  matchmaking race condition, and here's why.** The old `/api/queue/join`
+  read "is there a waiting opponent?" and then wrote a match in two
+  separate steps, so two squads could in theory both match against the
+  same opponent. The new flow (`/api/posts/[id]/accept`) instead does a
+  single conditional `UPDATE match_posts SET status = 'accepted' ...
+  WHERE status = 'open'` — only one concurrent accept call can ever win
+  that update, and every other one gets zero affected rows back, which the
+  route turns into a clear "this post was already taken" error instead of
+  a silent double-match. This doesn't need a database function or row
+  locking to be safe; the conditional `WHERE` clause is the whole guard.
+- **Player stat fields are a placeholder set.** `player_match_stats`
+  stores `goals`, `assists`, and `motm` in a jsonb column on purpose — the
+  founder is expected to send a fuller list of stat fields later, and
+  adding more will just mean writing more keys into that jsonb blob, not a
+  schema migration. Don't read too much into which three fields shipped
+  first.
 - **Signup and profile creation.** A Postgres trigger
   (`handle_new_user` in `supabase/schema.sql`) creates the `profiles` row
   automatically when someone signs up, using the username passed in at

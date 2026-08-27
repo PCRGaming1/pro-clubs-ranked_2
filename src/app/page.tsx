@@ -19,9 +19,9 @@ export default async function HomePage() {
           Find your next Pro Clubs match
         </h1>
         <p className="text-[var(--pcr-muted)] mb-8 text-base md:text-lg">
-          Queue up your club, get matched against another squad your size, and
-          climb the XP ladder. Built for EA FC Pro Clubs — 2v2 up to full
-          11v11.
+          Post your club up for a match, get challenged by another squad your
+          size, and climb the XP ladder. Built for EA FC Pro Clubs — 2v2 up to
+          full 11v11.
         </p>
         <div className="flex items-center justify-center gap-3">
           <Link
@@ -71,12 +71,12 @@ export default async function HomePage() {
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link
-          href="/queue"
+          href="/challenges"
           className="rounded-lg border border-[var(--pcr-border)] p-4 no-underline hover:border-[var(--pcr-accent-strong)] transition-colors"
         >
-          <div className="font-display text-lg">Queue</div>
+          <div className="font-display text-lg">Find a Match</div>
           <p className="text-sm text-[var(--pcr-muted)]">
-            Find an opponent for your squad.
+            Post a challenge, or accept one from another squad.
           </p>
         </Link>
         <Link
@@ -128,7 +128,12 @@ async function SquadDashboard({ squadId }: { squadId: string }) {
             {matches.slice(0, 5).map((m) => (
               <li key={m.id} className="text-sm">
                 <Link href={`/matches/${m.id}`} className="no-underline">
-                  {m.size} — {m.status === "confirmed" ? "Confirmed" : "Pending"}
+                  {m.size} —{" "}
+                  {m.status === "confirmed"
+                    ? "Confirmed"
+                    : m.status === "disputed"
+                      ? "Disputed"
+                      : "Pending"}
                 </Link>
               </li>
             ))}

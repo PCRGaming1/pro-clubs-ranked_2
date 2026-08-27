@@ -4,7 +4,7 @@ import type { Database } from "@/lib/database.types";
 
 // Routes that require a logged-in user. Anything under these prefixes
 // redirects to /login when there is no active session.
-const PROTECTED_PREFIXES = ["/queue", "/squad", "/matches"];
+const PROTECTED_PREFIXES = ["/challenges", "/squad", "/matches"];
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(
