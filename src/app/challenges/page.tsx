@@ -24,7 +24,7 @@ export default async function ChallengesPage() {
         <p className="mb-4">You need a squad before you can post or accept a match.</p>
         <Link
           href="/squad/new"
-          className="inline-block rounded-md bg-[var(--pcr-accent-strong)] text-white font-medium px-5 py-2.5 no-underline hover:opacity-90 transition-opacity"
+          className="inline-block rounded-md bg-[var(--pcr-accent-strong)] text-[var(--pcr-accent-strong-fg)] font-medium px-5 py-2.5 no-underline hover:opacity-90 transition-opacity"
         >
           Create a squad
         </Link>
@@ -43,7 +43,7 @@ export default async function ChallengesPage() {
         </div>
         <Link
           href="/challenges/new"
-          className="rounded-md bg-[var(--pcr-accent-strong)] text-white font-medium px-4 py-2 text-sm no-underline hover:opacity-90 transition-opacity"
+          className="rounded-md bg-[var(--pcr-accent-strong)] text-[var(--pcr-accent-strong-fg)] font-medium px-4 py-2 text-sm no-underline hover:opacity-90 transition-opacity"
         >
           Post a match
         </Link>

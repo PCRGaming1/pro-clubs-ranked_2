@@ -26,7 +26,7 @@ export default async function HomePage() {
         <div className="flex items-center justify-center gap-3">
           <Link
             href="/signup"
-            className="rounded-md bg-[var(--pcr-accent-strong)] text-white font-medium px-5 py-2.5 no-underline hover:opacity-90 transition-opacity"
+            className="rounded-md bg-[var(--pcr-accent-strong)] text-[var(--pcr-accent-strong-fg)] font-medium px-5 py-2.5 no-underline hover:opacity-90 transition-opacity"
           >
             Sign up
           </Link>
@@ -60,7 +60,7 @@ export default async function HomePage() {
           </p>
           <Link
             href="/squad/new"
-            className="inline-block rounded-md bg-[var(--pcr-accent-strong)] text-white font-medium px-5 py-2.5 no-underline hover:opacity-90 transition-opacity"
+            className="inline-block rounded-md bg-[var(--pcr-accent-strong)] text-[var(--pcr-accent-strong-fg)] font-medium px-5 py-2.5 no-underline hover:opacity-90 transition-opacity"
           >
             Create a squad
           </Link>
@@ -74,7 +74,7 @@ export default async function HomePage() {
           href="/challenges"
           className="rounded-lg border border-[var(--pcr-border)] p-4 no-underline hover:border-[var(--pcr-accent-strong)] transition-colors"
         >
-          <div className="font-display text-lg">Find a Match</div>
+          <div className="font-display text-lg">Matchmaking</div>
           <p className="text-sm text-[var(--pcr-muted)]">
             Post a challenge, or accept one from another squad.
           </p>
@@ -83,9 +83,27 @@ export default async function HomePage() {
           href="/leaderboard"
           className="rounded-lg border border-[var(--pcr-border)] p-4 no-underline hover:border-[var(--pcr-accent-strong)] transition-colors"
         >
-          <div className="font-display text-lg">Leaderboard</div>
+          <div className="font-display text-lg">Leaderboards</div>
           <p className="text-sm text-[var(--pcr-muted)]">
             See how every squad ranks by XP.
+          </p>
+        </Link>
+        <Link
+          href="/profile"
+          className="rounded-lg border border-[var(--pcr-border)] p-4 no-underline hover:border-[var(--pcr-accent-strong)] transition-colors"
+        >
+          <div className="font-display text-lg">Individual</div>
+          <p className="text-sm text-[var(--pcr-muted)]">
+            Your own stats across every match you&apos;ve logged.
+          </p>
+        </Link>
+        <Link
+          href="/about"
+          className="rounded-lg border border-[var(--pcr-border)] p-4 no-underline hover:border-[var(--pcr-accent-strong)] transition-colors"
+        >
+          <div className="font-display text-lg">About Us</div>
+          <p className="text-sm text-[var(--pcr-muted)]">
+            What Pro Clubs Ranked is, and what&apos;s coming next.
           </p>
         </Link>
       </div>

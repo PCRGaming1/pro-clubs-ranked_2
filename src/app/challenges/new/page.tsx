@@ -18,7 +18,7 @@ export default async function NewChallengePage() {
         <p className="mb-4">You need a squad before you can post a match.</p>
         <Link
           href="/squad/new"
-          className="inline-block rounded-md bg-[var(--pcr-accent-strong)] text-white font-medium px-5 py-2.5 no-underline hover:opacity-90 transition-opacity"
+          className="inline-block rounded-md bg-[var(--pcr-accent-strong)] text-[var(--pcr-accent-strong-fg)] font-medium px-5 py-2.5 no-underline hover:opacity-90 transition-opacity"
         >
           Create a squad
         </Link>

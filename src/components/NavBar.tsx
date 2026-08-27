@@ -1,9 +1,16 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/data";
+import { getCurrentUser, getSquadForUser } from "@/lib/data";
 import SignOutButton from "@/components/SignOutButton";
 
 export default async function NavBar() {
   const current = await getCurrentUser();
+
+  // "Club" links straight to the user's own squad page — reusing the same
+  // one-squad-per-user lookup the homepage and challenge board already use
+  // (see src/lib/data.ts) rather than adding a new query. No squad yet ->
+  // send them to /squad/new instead.
+  const squadInfo = current ? await getSquadForUser(current.user.id) : null;
+  const clubHref = squadInfo ? `/squad/${squadInfo.squad.id}` : "/squad/new";
 
   return (
     <header className="border-b border-[var(--pcr-navbar-border)] bg-[var(--pcr-navbar-bg)] sticky top-0 z-10">
@@ -19,16 +26,34 @@ export default async function NavBar() {
           {current ? (
             <>
               <Link
-                href="/challenges"
+                href="/about"
                 className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
               >
-                Find a Match
+                About Us
+              </Link>
+              <Link
+                href={clubHref}
+                className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
+              >
+                Club
+              </Link>
+              <Link
+                href="/profile"
+                className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
+              >
+                Individual
               </Link>
               <Link
                 href="/leaderboard"
                 className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
               >
-                Leaderboard
+                Leaderboards
+              </Link>
+              <Link
+                href="/challenges"
+                className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
+              >
+                Matchmaking
               </Link>
               <span className="hidden md:inline font-[family-name:var(--font-mono)] text-xs text-[var(--pcr-navbar-muted)]">
                 {current.profile?.username ?? current.user.email}
@@ -38,10 +63,16 @@ export default async function NavBar() {
           ) : (
             <>
               <Link
+                href="/about"
+                className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
+              >
+                About Us
+              </Link>
+              <Link
                 href="/leaderboard"
                 className="hidden sm:inline text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] no-underline"
               >
-                Leaderboard
+                Leaderboards
               </Link>
               <Link
                 href="/login"
@@ -51,7 +82,7 @@ export default async function NavBar() {
               </Link>
               <Link
                 href="/signup"
-                className="rounded-md bg-[var(--pcr-accent-strong)] text-white px-3 py-1.5 no-underline hover:opacity-90 transition-opacity"
+                className="rounded-md bg-[var(--pcr-accent-strong)] text-[var(--pcr-accent-strong-fg)] px-3 py-1.5 no-underline hover:opacity-90 transition-opacity"
               >
                 Sign up
               </Link>

@@ -38,15 +38,15 @@ export const TIERS: TierInfo[] = [
     tier: "Gold",
     min: 3000,
     max: 6999,
-    colorClass: "text-[#c9971f]",
-    bgClass: "bg-[#c9971f]/10",
+    colorClass: "text-[var(--pcr-gold)]",
+    bgClass: "bg-[var(--pcr-gold)]/10",
   },
   {
     tier: "Elite",
     min: 7000,
     max: null,
-    colorClass: "text-[#ff5a1f]",
-    bgClass: "bg-[#ff5a1f]/10",
+    colorClass: "text-[var(--pcr-accent-strong)]",
+    bgClass: "bg-[var(--pcr-accent-strong)]/10",
   },
 ];
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { errorTextClass } from "@/components/form";
 
 const acceptClass =
-  "rounded-md bg-[var(--pcr-accent-strong)] text-white text-sm font-medium px-4 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed";
+  "rounded-md bg-[var(--pcr-accent-strong)] text-[var(--pcr-accent-strong-fg)] text-sm font-medium px-4 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed";
 
 const cancelClass =
   "rounded-md border border-[var(--pcr-border)] text-sm px-4 py-1.5 hover:bg-[var(--pcr-bg-elevated)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed";

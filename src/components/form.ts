@@ -8,7 +8,7 @@ export const labelClass =
   "block text-xs font-[family-name:var(--font-mono)] uppercase tracking-wide text-[var(--pcr-muted)] mb-1";
 
 export const primaryButtonClass =
-  "w-full rounded-md bg-[var(--pcr-accent-strong)] text-white font-medium px-4 py-2 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed";
+  "w-full rounded-md bg-[var(--pcr-accent-strong)] text-[var(--pcr-accent-strong-fg)] font-medium px-4 py-2 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed";
 
 export const secondaryButtonClass =
   "rounded-md border border-[var(--pcr-border)] px-4 py-2 text-sm hover:bg-[var(--pcr-bg-elevated)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed";

@@ -1,56 +1,63 @@
 @import "tailwindcss";
 
 /*
- * Pro Clubs Ranked brand tokens — white / red / blue, FIFA-style.
+ * Pro Clubs Ranked brand tokens — black / neon green, esports-style.
  * Light values live on bare :root; dark overrides key off
  * prefers-color-scheme so the app matches the OS theme automatically
  * (Tailwind v4's `dark:` variant already targets that media query by
  * default, so no extra config is required).
  *
- * Red is the one interactive accent (links, buttons, focus rings).
- * Blue is reserved for the navbar band, so it reads as a deliberate
- * brand block rather than fighting red for attention everywhere.
+ * Green is the one interactive accent (links, buttons, focus rings).
+ * The navbar band is a fixed near-black regardless of light/dark mode,
+ * so it reads as a deliberate brand block rather than shifting with the
+ * page background.
+ *
+ * --pcr-accent-strong is a bright/light neon green in both themes, so
+ * text placed on top of it (buttons, CTAs) uses --pcr-accent-strong-fg
+ * (near-black) instead of white — white would fail contrast against it.
  */
 :root {
-  --pcr-bg: #ffffff;
-  --pcr-bg-elevated: #f4f6fa;
-  --pcr-fg: #0b1526;
-  --pcr-muted: #5b6576;
-  --pcr-border: #dde2ea;
+  --pcr-bg: #f4f7f4;
+  --pcr-bg-elevated: #e9efe9;
+  --pcr-fg: #0c1310;
+  --pcr-muted: #57635b;
+  --pcr-border: #d8e0da;
 
-  --pcr-accent: #b8102e; /* red, tuned for light backgrounds */
-  --pcr-accent-strong: #d81e3e; /* red, high-contrast */
-  --pcr-gold: #a97a12; /* XP / rank tiers */
+  --pcr-accent: #0e8f3e; /* green, tuned for light backgrounds */
+  --pcr-accent-strong: #17c957; /* green, high-contrast */
+  --pcr-accent-strong-fg: #06180d; /* near-black text on top of accent-strong */
+  --pcr-gold: #a97a12; /* XP / rank tiers — semantic, not a brand color */
   --pcr-success: #1f8a4c; /* confirmed / success states */
   --pcr-danger: #c23b3b;
 
-  /* Fixed navy navbar band — same idea as the landing page's hero: */
-  --pcr-navbar-bg: #0e1e4d;
-  --pcr-navbar-fg: #ffffff;
-  --pcr-navbar-muted: #b9c4e6;
-  --pcr-navbar-accent: #ff5468;
-  --pcr-navbar-border: rgba(255, 255, 255, 0.14);
+  /* Fixed near-black navbar band — same idea as before, new brand color: */
+  --pcr-navbar-bg: #05080a;
+  --pcr-navbar-fg: #eafcef;
+  --pcr-navbar-muted: #7c9488;
+  --pcr-navbar-accent: #3cff6e;
+  --pcr-navbar-border: rgba(60, 255, 110, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --pcr-bg: #0a1220;
-    --pcr-bg-elevated: #101b30;
-    --pcr-fg: #eef1f6;
-    --pcr-muted: #a3adc2;
-    --pcr-border: #223050;
+    --pcr-bg: #05080a;
+    --pcr-bg-elevated: #0d1310;
+    --pcr-fg: #eafcef;
+    --pcr-muted: #8fa89a;
+    --pcr-border: #1c2620;
 
-    --pcr-accent: #ff6b7a;
-    --pcr-accent-strong: #ff4d5e;
+    --pcr-accent: #39e469;
+    --pcr-accent-strong: #3cff6e; /* vivid neon */
+    --pcr-accent-strong-fg: #06180d; /* near-black — still needed, this green is vivid/light too */
     --pcr-gold: #d9ab34;
     --pcr-success: #35b56e;
     --pcr-danger: #e2645f;
 
-    --pcr-navbar-bg: #050c22;
-    --pcr-navbar-fg: #ffffff;
-    --pcr-navbar-muted: #a9b6dd;
-    --pcr-navbar-accent: #ff6b7a;
-    --pcr-navbar-border: rgba(255, 255, 255, 0.12);
+    --pcr-navbar-bg: #05080a;
+    --pcr-navbar-fg: #eafcef;
+    --pcr-navbar-muted: #7c9488;
+    --pcr-navbar-accent: #3cff6e;
+    --pcr-navbar-border: rgba(60, 255, 110, 0.14);
   }
 }
 

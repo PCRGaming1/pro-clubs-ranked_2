@@ -210,6 +210,37 @@ export async function getPlayerMatchStatsForMatch(
   });
 }
 
+export interface PlayerTotals {
+  goals: number;
+  assists: number;
+  motm: number;
+  matchesLogged: number;
+}
+
+/**
+ * One player's own aggregated stats across every match they've logged
+ * player_match_stats for, regardless of which squad it was for (unlike
+ * getTopProsForSquad below, which is scoped to a single squad). Backs the
+ * /profile ("Individual") page.
+ */
+export async function getPlayerStatsForUser(userId: string): Promise<PlayerTotals> {
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("player_match_stats")
+    .select("stats")
+    .eq("user_id", userId);
+
+  const totals: PlayerTotals = { goals: 0, assists: 0, motm: 0, matchesLogged: 0 };
+  for (const row of rows ?? []) {
+    const stats = (row.stats ?? {}) as { goals?: number; assists?: number; motm?: boolean };
+    totals.goals += Number(stats.goals ?? 0);
+    totals.assists += Number(stats.assists ?? 0);
+    totals.motm += stats.motm ? 1 : 0;
+    totals.matchesLogged += 1;
+  }
+  return totals;
+}
+
 export interface TopPro {
   user_id: string;
   username: string | null;
