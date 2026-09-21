@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser, getSquadForUser, getOpenMatchPosts } from "@/lib/data";
-import PostActionButton from "./PostActionButton";
+import ChallengeBoardTable from "./ChallengeBoardTable";
 
 export const dynamic = "force-dynamic";
 
@@ -49,61 +49,7 @@ export default async function ChallengesPage() {
         </Link>
       </div>
 
-      {posts.length === 0 ? (
-        <p className="text-sm text-[var(--pcr-muted)]">
-          No open match posts right now.{" "}
-          <Link href="/challenges/new" className="text-[var(--pcr-accent-strong)]">
-            Post one
-          </Link>{" "}
-          to be the first.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {posts.map((p) => {
-            const isOwn = p.squad_id === squadInfo.squad.id;
-            return (
-              <li
-                key={p.id}
-                className="rounded-lg border border-[var(--pcr-border)] p-4 flex items-center justify-between flex-wrap gap-3"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono-stat text-sm">{p.size}</span>
-                    <span className="text-xs text-[var(--pcr-muted)]">
-                      {p.platform?.toUpperCase() ?? "—"} · {p.region ?? "—"}
-                    </span>
-                  </div>
-                  <p className="text-sm mt-1">
-                    Posted by{" "}
-                    {p.squad_id ? (
-                      <Link
-                        href={`/squad/${p.squad_id}`}
-                        className="text-[var(--pcr-accent-strong)] no-underline"
-                      >
-                        {p.squad_name ?? "Unknown squad"}
-                      </Link>
-                    ) : (
-                      (p.squad_name ?? "Unknown squad")
-                    )}
-                  </p>
-                  {p.note && (
-                    <p className="text-sm text-[var(--pcr-muted)] mt-1">&ldquo;{p.note}&rdquo;</p>
-                  )}
-                  <p className="text-xs text-[var(--pcr-muted)] mt-1">
-                    {new Date(p.created_at).toLocaleString()}
-                  </p>
-                </div>
-
-                {isOwn ? (
-                  <PostActionButton postId={p.id} variant="cancel" />
-                ) : (
-                  <PostActionButton postId={p.id} variant="accept" />
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <ChallengeBoardTable posts={posts} ownSquadId={squadInfo.squad.id} />
     </div>
   );
 }
