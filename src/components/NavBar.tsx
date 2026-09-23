@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser, getSquadForUser } from "@/lib/data";
 import SignOutButton from "@/components/SignOutButton";
+import Logo from "@/components/Logo";
 
 export default async function NavBar() {
   const current = await getCurrentUser();
@@ -17,9 +18,9 @@ export default async function NavBar() {
       <div className="w-full max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <Link
           href="/"
-          className="font-display text-xl md:text-2xl text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] transition-colors no-underline"
+          className="text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] transition-colors no-underline"
         >
-          Clubs <span className="text-[var(--pcr-navbar-accent)]">Ranked</span>
+          <Logo size={30} wordmarkClassName="text-lg md:text-xl" />
         </Link>
 
         <nav className="flex items-center gap-4 md:gap-6 text-sm">
@@ -82,7 +83,7 @@ export default async function NavBar() {
               </Link>
               <Link
                 href="/signup"
-                className="rounded-md bg-[var(--pcr-accent-strong)] text-[var(--pcr-accent-strong-fg)] px-3 py-1.5 no-underline hover:opacity-90 transition-opacity"
+                className="rounded-md bg-[var(--pcr-cta-strong)] text-[var(--pcr-cta-strong-fg)] px-3 py-1.5 no-underline hover:opacity-90 transition-opacity"
               >
                 Sign up
               </Link>

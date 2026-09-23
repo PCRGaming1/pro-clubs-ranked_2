@@ -36,15 +36,11 @@ export default function AboutPage() {
               no entry fee, no wagering.
             </li>
             <li>
-              <strong className="text-[var(--pcr-fg)]">Cash matches — later.</strong>{" "}
-              We&apos;d like to offer optional cash matches down the line,
-              but UK gambling law has real implications for anything that
-              looks like a wager between players, and we&apos;re not
-              willing to guess wrong on that. Cash matches are{" "}
-              <strong className="text-[var(--pcr-fg)]">not live yet</strong>{" "}
-              while we get a straight answer on where the site would sit
-              under that law. Until then, everything on Clubs Ranked
-              is free to play.
+              <strong className="text-[var(--pcr-fg)]">No cash or wagering.</strong>{" "}
+              There are no cash prizes, paid entry, or wagering features on
+              Clubs Ranked, and none are planned without a proper legal
+              review of UK gambling law first. Everything on the site is
+              free to play.
             </li>
           </ul>
         </section>
@@ -62,9 +58,29 @@ export default function AboutPage() {
           </p>
         </section>
 
+        <section>
+          <h2 className="font-display text-lg mb-2">Known limitations, for now</h2>
+          <ul className="list-disc list-inside space-y-2">
+            <li>
+              Each account can belong to <strong className="text-[var(--pcr-fg)]">one squad</strong> at
+              a time — invite/remove flows for bigger 11-a-side rosters are
+              on the roadmap, not built yet.
+            </li>
+            <li>
+              If two squads report different results for the same match,
+              it&apos;s marked <strong className="text-[var(--pcr-fg)]">disputed</strong> and there&apos;s no
+              admin override or vote yet — either squad can re-report to
+              correct a mistake, which can resolve it, but nothing forces
+              that to happen.
+            </li>
+          </ul>
+        </section>
+
         <p className="text-xs text-[var(--pcr-muted)]">
           This is an early build — expect rough edges, and features that
-          arrive roughly in the order above.
+          arrive roughly in the order above. Found a bug, or hit a dispute
+          that won&apos;t resolve? Email{" "}
+          <a href="mailto:support@clubsranked.co.uk">support@clubsranked.co.uk</a>.
         </p>
       </div>
     </div>
