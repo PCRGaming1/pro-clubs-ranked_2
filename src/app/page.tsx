@@ -85,7 +85,7 @@ export default async function HomePage() {
         >
           <div className="font-display text-lg">Leaderboards</div>
           <p className="text-sm text-[var(--pcr-muted)]">
-            See how every squad ranks by XP.
+            Overall and per-mode ladders, 2v2 up to 11v11.
           </p>
         </Link>
         <Link
@@ -103,7 +103,7 @@ export default async function HomePage() {
         >
           <div className="font-display text-lg">About Us</div>
           <p className="text-sm text-[var(--pcr-muted)]">
-            What Pro Clubs Ranked is, and what&apos;s coming next.
+            What Clubs Ranked is, and what&apos;s coming next.
           </p>
         </Link>
       </div>

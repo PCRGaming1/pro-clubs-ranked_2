@@ -21,7 +21,7 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pro Clubs Ranked",
+  title: "Clubs Ranked",
   description: "Matchmaking and XP ladder for EA FC Pro Clubs.",
 };
 
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </main>
         <footer className="border-t border-[var(--pcr-border)] py-6 mt-auto">
           <div className="w-full max-w-5xl mx-auto px-4 text-xs font-[family-name:var(--font-mono)] text-[var(--pcr-muted)] flex flex-wrap gap-x-4 gap-y-1 justify-between">
-            <span>PRO CLUBS RANKED — MVP BUILD</span>
+            <span>CLUBS RANKED — MVP BUILD</span>
             <span>NO CASH / WAGERING FEATURES — XP LADDER ONLY</span>
           </div>
         </footer>

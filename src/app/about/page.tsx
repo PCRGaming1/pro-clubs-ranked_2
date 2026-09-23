@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "About — Pro Clubs Ranked",
+  title: "About — Clubs Ranked",
 };
 
 export default function AboutPage() {
@@ -9,7 +9,7 @@ export default function AboutPage() {
 
       <div className="space-y-6 text-sm leading-relaxed text-[var(--pcr-fg)]">
         <p>
-          Pro Clubs Ranked is a matchmaking and XP ladder site built
+          Clubs Ranked is a matchmaking and XP ladder site built
           specifically for EA FC Pro Clubs. It exists because getting an
           organized club match — at whatever squad size you actually have
           on a given night — usually means posting in a Discord server and
@@ -43,7 +43,7 @@ export default function AboutPage() {
               willing to guess wrong on that. Cash matches are{" "}
               <strong className="text-[var(--pcr-fg)]">not live yet</strong>{" "}
               while we get a straight answer on where the site would sit
-              under that law. Until then, everything on Pro Clubs Ranked
+              under that law. Until then, everything on Clubs Ranked
               is free to play.
             </li>
           </ul>

@@ -6,6 +6,7 @@ import {
   getSquadMembers,
   getRecentMatchesForSquad,
   getTopProsForSquad,
+  getModeStatsForSquad,
 } from "@/lib/data";
 import TierBadge from "@/components/TierBadge";
 import EaClubLinkClient from "./EaClubLinkClient";
@@ -22,11 +23,12 @@ export default async function SquadPage({
 
   if (!squad) notFound();
 
-  const [current, members, matches, topPros] = await Promise.all([
+  const [current, members, matches, topPros, modeStats] = await Promise.all([
     getCurrentUser(),
     getSquadMembers(squad.id),
     getRecentMatchesForSquad(squad.id),
     getTopProsForSquad(squad.id),
+    getModeStatsForSquad(squad.id),
   ]);
 
   const isCaptain = current?.user.id === squad.captain_id;
@@ -45,6 +47,34 @@ export default async function SquadPage({
           <TierBadge xp={squad.xp} />
         </div>
       </div>
+
+      <section className="mb-8">
+        <h2 className="font-display text-xl mb-3">Ratings by mode</h2>
+        {modeStats.length === 0 ? (
+          <p className="text-sm text-[var(--pcr-muted)]">
+            No confirmed matches yet, so no mode ratings.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {modeStats.map((m) => (
+              <Link
+                key={m.size}
+                href={`/leaderboard?mode=${m.size}`}
+                className="rounded-lg border border-[var(--pcr-border)] p-3 no-underline hover:border-[var(--pcr-accent-strong)] transition-colors"
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="font-mono-stat text-sm">{m.size}</span>
+                  <TierBadge xp={m.xp} />
+                </div>
+                <div className="font-mono-stat text-xl">{m.xp} XP</div>
+                <div className="text-xs text-[var(--pcr-muted)]">
+                  {m.wins}W – {m.losses}L
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="mb-8">
         <h2 className="font-display text-xl mb-3">Members</h2>

@@ -385,3 +385,118 @@ create policy "a player can update their own logged stats"
   to authenticated
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
+
+-- =============================================================================
+-- Per-mode leaderboards (same as supabase/migration_004_mode_leaderboards.sql,
+-- minus its backfill step, which a brand-new project doesn't need).
+-- One XP ladder per squad size, written only via award_match_xp().
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- 1. squad_mode_stats
+-- -----------------------------------------------------------------------------
+create table if not exists public.squad_mode_stats (
+  squad_id uuid not null references public.squads(id) on delete cascade,
+  size text not null check (size in ('2v2','3v3','4v4','5v5','6v6','7v7','8v8','9v9','10v10','11v11')),
+  xp int not null default 0,
+  wins int not null default 0,
+  losses int not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (squad_id, size)
+);
+
+create index if not exists squad_mode_stats_size_xp_idx
+  on public.squad_mode_stats (size, xp desc);
+
+alter table public.squad_mode_stats enable row level security;
+
+drop policy if exists "squad mode stats are readable by any authenticated user"
+  on public.squad_mode_stats;
+create policy "squad mode stats are readable by any authenticated user"
+  on public.squad_mode_stats for select
+  to authenticated
+  using (true);
+
+-- Deliberately NO insert/update/delete policies: the only way to write this
+-- table is through award_match_xp() below, which runs as the table owner.
+-- So nobody can edit their own per-mode XP directly from the browser.
+
+-- -----------------------------------------------------------------------------
+-- 2. matches.xp_awarded
+-- -----------------------------------------------------------------------------
+alter table public.matches
+  add column if not exists xp_awarded boolean not null default false;
+
+-- -----------------------------------------------------------------------------
+-- 3. award_match_xp()
+-- -----------------------------------------------------------------------------
+-- Keep these numbers in sync with XP_WIN / XP_LOSS in src/lib/xp.ts.
+create or replace function public.award_match_xp(p_match_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  m public.matches%rowtype;
+  v_loser uuid;
+  v_win_xp constant int := 50;
+  v_loss_xp constant int := 15;
+begin
+  -- Caller must belong to one of the two squads in the match.
+  if not exists (
+    select 1
+    from public.matches mm
+    join public.squad_members sm
+      on sm.squad_id in (mm.squad_a_id, mm.squad_b_id)
+    where mm.id = p_match_id
+      and sm.user_id = auth.uid()
+  ) then
+    raise exception 'not a member of either squad in this match';
+  end if;
+
+  -- Claim the award atomically: only one call can flip xp_awarded, and only
+  -- for a confirmed match with a winner. Everyone else gets no row back.
+  update public.matches
+     set xp_awarded = true
+   where id = p_match_id
+     and status = 'confirmed'
+     and winner_squad_id is not null
+     and xp_awarded = false
+  returning * into m;
+
+  if not found then
+    return; -- not confirmed yet, or already awarded
+  end if;
+
+  v_loser := case when m.winner_squad_id = m.squad_a_id then m.squad_b_id else m.squad_a_id end;
+
+  -- Overall ladder
+  update public.squads set xp = xp + v_win_xp where id = m.winner_squad_id;
+  if v_loser is not null then
+    update public.squads set xp = xp + v_loss_xp where id = v_loser;
+  end if;
+
+  -- Per-mode ladder (skipped for any legacy match without a valid size)
+  if m.size in ('2v2','3v3','4v4','5v5','6v6','7v7','8v8','9v9','10v10','11v11') then
+    insert into public.squad_mode_stats as s (squad_id, size, xp, wins, losses)
+    values (m.winner_squad_id, m.size, v_win_xp, 1, 0)
+    on conflict (squad_id, size) do update
+      set xp = s.xp + excluded.xp,
+          wins = s.wins + 1,
+          updated_at = now();
+
+    if v_loser is not null then
+      insert into public.squad_mode_stats as s (squad_id, size, xp, wins, losses)
+      values (v_loser, m.size, v_loss_xp, 0, 1)
+      on conflict (squad_id, size) do update
+        set xp = s.xp + excluded.xp,
+            losses = s.losses + 1,
+            updated_at = now();
+    end if;
+  end if;
+end;
+$$;
+
+revoke all on function public.award_match_xp(uuid) from public, anon;
+grant execute on function public.award_match_xp(uuid) to authenticated;

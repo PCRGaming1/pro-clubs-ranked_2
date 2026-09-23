@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Database } from "@/lib/database.types";
+import type { Database, MatchSize } from "@/lib/database.types";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Squad = Database["public"]["Tables"]["squads"]["Row"];
@@ -7,6 +7,7 @@ export type SquadMember = Database["public"]["Tables"]["squad_members"]["Row"];
 export type MatchRow = Database["public"]["Tables"]["matches"]["Row"];
 export type MatchPostRow = Database["public"]["Tables"]["match_posts"]["Row"];
 export type MatchReportRow = Database["public"]["Tables"]["match_reports"]["Row"];
+export type SquadModeStatRow = Database["public"]["Tables"]["squad_mode_stats"]["Row"];
 
 /** Current authenticated user + their profile row, or null if logged out. */
 export async function getCurrentUser() {
@@ -118,6 +119,71 @@ export async function getLeaderboard() {
     .order("xp", { ascending: false })
     .limit(100);
   return (squads ?? []) as Squad[];
+}
+
+export interface ModeLeaderboardRow {
+  squad_id: string;
+  name: string;
+  platform: string | null;
+  region: string | null;
+  xp: number;
+  wins: number;
+  losses: number;
+}
+
+/**
+ * The ladder for one match size (2v2, 5v5, ...): squads ranked by the XP
+ * they've earned in that size only. Squads that haven't played a
+ * confirmed match at this size don't appear. Two queries joined in app
+ * code, same reasoning as getSquadMembers above.
+ */
+export async function getModeLeaderboard(size: MatchSize): Promise<ModeLeaderboardRow[]> {
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("squad_mode_stats")
+    .select("squad_id, xp, wins, losses")
+    .eq("size", size)
+    .order("xp", { ascending: false })
+    .order("wins", { ascending: false })
+    .limit(100);
+
+  if (!rows || rows.length === 0) return [];
+
+  const { data: squads } = await supabase
+    .from("squads")
+    .select("id, name, platform, region")
+    .in(
+      "id",
+      rows.map((r) => r.squad_id)
+    );
+  const squadById = new Map((squads ?? []).map((s) => [s.id, s]));
+
+  return rows.flatMap((r) => {
+    const squad = squadById.get(r.squad_id);
+    if (!squad) return [];
+    return [
+      {
+        squad_id: r.squad_id,
+        name: squad.name,
+        platform: squad.platform,
+        region: squad.region,
+        xp: r.xp,
+        wins: r.wins,
+        losses: r.losses,
+      },
+    ];
+  });
+}
+
+/** A squad's record in every size it has played, highest XP first. */
+export async function getModeStatsForSquad(squadId: string): Promise<SquadModeStatRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("squad_mode_stats")
+    .select("*")
+    .eq("squad_id", squadId)
+    .order("xp", { ascending: false });
+  return (data ?? []) as SquadModeStatRow[];
 }
 
 export async function getMatchById(id: string) {
