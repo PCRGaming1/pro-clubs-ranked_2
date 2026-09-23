@@ -19,7 +19,7 @@ export default async function NavBar() {
           href="/"
           className="font-display text-xl md:text-2xl text-[var(--pcr-navbar-fg)] hover:text-[var(--pcr-navbar-accent)] transition-colors no-underline"
         >
-          Pro Clubs <span className="text-[var(--pcr-navbar-accent)]">Ranked</span>
+          Clubs <span className="text-[var(--pcr-navbar-accent)]">Ranked</span>
         </Link>
 
         <nav className="flex items-center gap-4 md:gap-6 text-sm">

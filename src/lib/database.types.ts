@@ -134,6 +134,9 @@ export interface Database {
           winner_squad_id: string | null;
           reported_by: string | null;
           created_at: string;
+          // Set by award_match_xp() once XP has been given out — see
+          // supabase/migration_004_mode_leaderboards.sql.
+          xp_awarded: boolean;
         };
         Insert: {
           id?: string;
@@ -146,6 +149,7 @@ export interface Database {
           winner_squad_id?: string | null;
           reported_by?: string | null;
           created_at?: string;
+          xp_awarded?: boolean;
         };
         Update: {
           id?: string;
@@ -158,6 +162,7 @@ export interface Database {
           winner_squad_id?: string | null;
           reported_by?: string | null;
           created_at?: string;
+          xp_awarded?: boolean;
         };
         Relationships: [];
       };
@@ -224,6 +229,35 @@ export interface Database {
         };
         Relationships: [];
       };
+      squad_mode_stats: {
+        // One row per (squad, size) — the per-mode XP ladders. Written only
+        // via the award_match_xp() database function, never directly.
+        Row: {
+          squad_id: string;
+          size: MatchSize;
+          xp: number;
+          wins: number;
+          losses: number;
+          updated_at: string;
+        };
+        Insert: {
+          squad_id: string;
+          size: MatchSize;
+          xp?: number;
+          wins?: number;
+          losses?: number;
+          updated_at?: string;
+        };
+        Update: {
+          squad_id?: string;
+          size?: MatchSize;
+          xp?: number;
+          wins?: number;
+          losses?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       player_match_stats: {
         Row: {
           id: string;
@@ -253,7 +287,12 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      award_match_xp: {
+        Args: { p_match_id: string };
+        Returns: undefined;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

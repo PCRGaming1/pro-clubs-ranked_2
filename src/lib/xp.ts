@@ -1,9 +1,12 @@
-// XP / ranking logic for Pro Clubs Ranked.
+// XP / ranking logic for Clubs Ranked.
 //
 // Simple, fixed-award system for the MVP: no scoreline weighting, no
 // opponent-strength adjustment. Good enough to seed a ladder; revisit
 // once there's real match data to tune against.
 
+// Keep in sync with v_win_xp / v_loss_xp in the award_match_xp() database
+// function (supabase/migration_004_mode_leaderboards.sql) — that's where XP
+// is actually awarded; these constants are for display only.
 export const XP_WIN = 50;
 export const XP_LOSS = 15;
 

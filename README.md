@@ -1,4 +1,4 @@
-# Pro Clubs Ranked (PCR)
+# Clubs Ranked
 
 A matchmaking + XP ladder web app for EA FC Pro Clubs (11-a-side club mode).
 Players create a squad, post an open challenge at a given size (2v2 up to
@@ -29,10 +29,11 @@ This guide assumes no prior Supabase or Vercel experience.
 ## 2. Set up the database
 
 **Setting up a brand-new Supabase project?** Use `supabase/schema.sql`.
-**Already have a PCR project from before this challenge-board/stats
+**Already have a Clubs Ranked project from before this challenge-board/stats
 update?** Run `supabase/migration_002_challenges_and_stats.sql`, then
-`supabase/migration_003_ea_link.sql` — see "Updating an existing project"
-below.
+`supabase/migration_003_ea_link.sql`, then
+`supabase/migration_004_mode_leaderboards.sql` — see "Updating an existing
+project" below. (Already ran 002 and 003? Just run 004.)
 
 1. In your Supabase project, open the **SQL Editor** (left sidebar).
 2. Open `supabase/schema.sql` from this repo, copy its entire contents,
@@ -63,6 +64,13 @@ few nullable columns (`profiles.ea_persona_name`,
 `squads.ea_club_id`/`ea_platform`) used by the experimental EA stats
 auto-import described below. Safe to run any time, touches no existing
 data.
+
+Then run `supabase/migration_004_mode_leaderboards.sql` for the per-mode
+leaderboards. It adds a `squad_mode_stats` table (XP / wins / losses per
+squad per size), a `matches.xp_awarded` flag, and an `award_match_xp()`
+database function that now does all XP awarding in one transaction. It
+also backfills per-mode stats from every match already confirmed, without
+changing anyone's existing overall XP. Safe to run more than once.
 
 ## 3. Run it locally
 
@@ -130,6 +138,16 @@ intentionally cut or simplified for now:
   route turns into a clear "this post was already taken" error instead of
   a silent double-match. This doesn't need a database function or row
   locking to be safe; the conditional `WHERE` clause is the whole guard.
+- **Per-mode leaderboards.** `/leaderboard` has an Overall tab (the
+  original `squads.xp` ladder) plus one tab per size (`?mode=5v5` etc.),
+  backed by `squad_mode_stats`. Each squad page shows its record in every
+  size it has played. Tiers on a mode tab use that mode's XP. XP for both
+  ladders is awarded only by the `award_match_xp()` SECURITY DEFINER
+  function, which can't pay out twice for one match (it flips
+  `matches.xp_awarded` first) and is the only way to write
+  `squad_mode_stats`. The broad "any authenticated user can update a
+  squad" policy on `squads` is no longer needed for XP and could now be
+  tightened to captain-only, but hasn't been yet.
 - **Player stat fields are a placeholder set.** `player_match_stats`
   stores `goals`, `assists`, and `motm` in a jsonb column on purpose — the
   founder is expected to send a fuller list of stat fields later, and

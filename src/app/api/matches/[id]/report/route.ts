@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { XP_WIN, XP_LOSS } from "@/lib/xp";
 
 export const dynamic = "force-dynamic";
 
@@ -129,36 +128,22 @@ export async function POST(
       .select();
 
     if (confirmedRows && confirmedRows.length > 0) {
-      const winnerSquadId2 = reportA.winner_squad_id;
-      const loserSquadId =
-        winnerSquadId2 === match.squad_a_id ? match.squad_b_id : match.squad_a_id;
+      // Award XP — overall ladder and this match size's ladder — in one
+      // database transaction. award_match_xp() is a SECURITY DEFINER
+      // function (see supabase/migration_004_mode_leaderboards.sql) that
+      // flips matches.xp_awarded first, so it can only ever pay out once
+      // per match even if called again.
+      const { error: awardError } = await supabase.rpc("award_match_xp", {
+        p_match_id: matchId,
+      });
 
-      const { data: winnerSquad } = await supabase
-        .from("squads")
-        .select("xp")
-        .eq("id", winnerSquadId2)
-        .maybeSingle();
-
-      if (winnerSquad) {
-        await supabase
-          .from("squads")
-          .update({ xp: winnerSquad.xp + XP_WIN })
-          .eq("id", winnerSquadId2);
-      }
-
-      if (loserSquadId) {
-        const { data: loserSquad } = await supabase
-          .from("squads")
-          .select("xp")
-          .eq("id", loserSquadId)
-          .maybeSingle();
-
-        if (loserSquad) {
-          await supabase
-            .from("squads")
-            .update({ xp: loserSquad.xp + XP_LOSS })
-            .eq("id", loserSquadId);
-        }
+      if (awardError) {
+        return NextResponse.json(
+          {
+            error: `Match confirmed, but XP could not be awarded: ${awardError.message}`,
+          },
+          { status: 500 }
+        );
       }
     }
 
