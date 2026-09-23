@@ -3,7 +3,12 @@
 -- =============================================================================
 -- IMPORTANT: these are STARTER Row Level Security policies for an early MVP.
 -- They aim to be "reasonable and not wide open," not audited or complete.
--- Before real users and real accounts depend on this, have someone review:
+-- A security review (Sept 2026, see SECURITY_REVIEW.md) tightened the three
+-- broad "any authenticated user can update this row" policies below to lock
+-- every column the app doesn't actually need to write — see the comment on
+-- each one. The remaining known gap is `squads.xp`, which stays writable by
+-- any authenticated user pending a SECURITY DEFINER rewrite of XP awarding.
+-- Before real users and real accounts depend on this, also review:
 --   - the match_posts / matches / match_reports policies for abuse
 --     potential (e.g. a user spamming posts, accepting posts they
 --     shouldn't be able to, or reporting bogus results for matches they
@@ -121,20 +126,28 @@ create policy "a user can create a squad naming themselves captain"
 -- /api/matches/[id]/report has to award XP to BOTH squads in a match —
 -- including the squad the reporting user is NOT a captain (or even a
 -- member) of. As with match_posts below, there's no service-role key in
--- this app, so this runs as the requesting user. Plain RLS policies can't
--- easily express "anyone can change the xp column, but only the captain
--- can change name/platform/region" (that needs column-level privileges or
--- a trigger). For the MVP, allow any authenticated user to update a
--- squads row and rely on the app code (not the database) to only ever
--- change `xp` on someone else's squad. Before real users depend on this,
--- move XP awards into a SECURITY DEFINER Postgres function that only
--- touches the xp column, and go back to a captain-only policy for
--- everything else.
-create policy "any authenticated user can update a squad"
+-- this app, so this runs as the requesting user.
+--
+-- What IS enforced at the database layer (as of migration 005): the WITH
+-- CHECK below locks name / captain_id / platform / region to their
+-- existing values, since no app code ever changes those via UPDATE (see
+-- SECURITY_REVIEW.md). Only xp, ea_club_id, and ea_platform stay freely
+-- writable by any authenticated user. xp specifically is still an
+-- accepted MVP gap: a malicious user could in theory grant a squad XP it
+-- didn't earn. Before real competitive stakes ride on the ladder, move XP
+-- awards into a SECURITY DEFINER Postgres function that only touches the
+-- xp column, gated on real match participation, rather than trusting the
+-- requesting client.
+create policy "any authenticated user can update a squad's mutable fields"
   on public.squads for update
   to authenticated
   using (true)
-  with check (true);
+  with check (
+    name = (select s.name from public.squads s where s.id = squads.id)
+    and captain_id is not distinct from (select s.captain_id from public.squads s where s.id = squads.id)
+    and platform is not distinct from (select s.platform from public.squads s where s.id = squads.id)
+    and region is not distinct from (select s.region from public.squads s where s.id = squads.id)
+  );
 
 -- -----------------------------------------------------------------------------
 -- squad_members
@@ -206,7 +219,11 @@ create policy "a member of either squad can insert a match"
     )
   );
 
-create policy "a member of either squad can update a match to report a result"
+-- As of migration 005, the WITH CHECK also locks squad_a_id / squad_b_id /
+-- size / platform / region / created_at to their existing values — only
+-- status and winner_squad_id (plus the unused legacy reported_by column)
+-- are ever written via UPDATE by app code (see SECURITY_REVIEW.md).
+create policy "a member of either squad can report a match's result"
   on public.matches for update
   to authenticated
   using (
@@ -222,6 +239,12 @@ create policy "a member of either squad can update a match to report a result"
       where sm.user_id = auth.uid()
         and sm.squad_id in (matches.squad_a_id, matches.squad_b_id)
     )
+    and squad_a_id = (select m.squad_a_id from public.matches m where m.id = matches.id)
+    and squad_b_id is not distinct from (select m.squad_b_id from public.matches m where m.id = matches.id)
+    and size is not distinct from (select m.size from public.matches m where m.id = matches.id)
+    and platform is not distinct from (select m.platform from public.matches m where m.id = matches.id)
+    and region is not distinct from (select m.region from public.matches m where m.id = matches.id)
+    and created_at = (select m.created_at from public.matches m where m.id = matches.id)
   );
 
 -- -----------------------------------------------------------------------------
@@ -265,15 +288,24 @@ create policy "a member of a squad can post a challenge for that squad"
 -- accepted_by_squad_id and match_id) — the accepting user is never a
 -- member of the poster's squad. Same MVP trade-off as queue_entries had:
 -- no service-role key here, so allow any authenticated user to update a
--- match_posts row and rely on the app code's atomic
--- `UPDATE ... WHERE status = 'open'` (see that route) to make accept-locking
--- and self-cancel safe. Tighten this (e.g. a SECURITY DEFINER function)
--- before this matters for abuse resistance.
-create policy "any authenticated user can update a match post"
+-- match_posts row, but (as of migration 005) lock every column except
+-- status / accepted_by_squad_id / match_id to its existing value — those
+-- three are the only ones any app code ever writes via UPDATE (accept and
+-- cancel; see SECURITY_REVIEW.md). The app's atomic
+-- `UPDATE ... WHERE status = 'open'` (see that route) still does the
+-- accept-locking/self-cancel race safety on top of this.
+create policy "any authenticated user can progress a match post's status"
   on public.match_posts for update
   to authenticated
   using (true)
-  with check (true);
+  with check (
+    squad_id = (select mp.squad_id from public.match_posts mp where mp.id = match_posts.id)
+    and size = (select mp.size from public.match_posts mp where mp.id = match_posts.id)
+    and platform is not distinct from (select mp.platform from public.match_posts mp where mp.id = match_posts.id)
+    and region is not distinct from (select mp.region from public.match_posts mp where mp.id = match_posts.id)
+    and note is not distinct from (select mp.note from public.match_posts mp where mp.id = match_posts.id)
+    and created_at = (select mp.created_at from public.match_posts mp where mp.id = match_posts.id)
+  );
 
 -- -----------------------------------------------------------------------------
 -- match_reports — each squad's claimed winner for a match. Both squads
