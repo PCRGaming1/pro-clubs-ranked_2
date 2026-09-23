@@ -6,6 +6,7 @@ import {
   getSquadById,
 } from "@/lib/data";
 import TierBadge from "@/components/TierBadge";
+import { Crest } from "@/components/Logo";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +15,12 @@ export default async function HomePage() {
 
   if (!current) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-12">
-        <h1 className="font-display text-4xl md:text-5xl mb-4">
+      <div className="-mx-4 -mt-8 mb-8 md:rounded-b-2xl overflow-hidden bg-[linear-gradient(100deg,#05070a_0%,#0a1726_55%,#05070a_100%)] text-center px-4 py-16 md:py-20">
+        <Crest size={56} />
+        <h1 className="font-display text-3xl md:text-5xl mt-5 mb-4 text-[#eef7f0]">
           Find your next Pro Clubs match
         </h1>
-        <p className="text-[var(--pcr-muted)] mb-8 text-base md:text-lg">
+        <p className="text-[#9fb3c4] mb-8 text-base md:text-lg max-w-2xl mx-auto">
           Post your club up for a match, get challenged by another squad your
           size, and climb the XP ladder. Built for EA FC Pro Clubs — 2v2 up to
           full 11v11.
@@ -26,18 +28,18 @@ export default async function HomePage() {
         <div className="flex items-center justify-center gap-3">
           <Link
             href="/signup"
-            className="rounded-md bg-[var(--pcr-accent-strong)] text-[var(--pcr-accent-strong-fg)] font-medium px-5 py-2.5 no-underline hover:opacity-90 transition-opacity"
+            className="rounded-full bg-[var(--pcr-cta-strong)] text-[var(--pcr-cta-strong-fg)] font-semibold px-6 py-2.5 no-underline hover:opacity-90 transition-opacity"
           >
             Sign up
           </Link>
           <Link
             href="/login"
-            className="rounded-md border border-[var(--pcr-border)] px-5 py-2.5 no-underline hover:bg-[var(--pcr-bg-elevated)] transition-colors"
+            className="rounded-full border border-[#2a3a48] text-[#eef7f0] px-6 py-2.5 no-underline hover:bg-white/5 transition-colors"
           >
             Log in
           </Link>
         </div>
-        <p className="mt-8 text-xs text-[var(--pcr-muted)]">
+        <p className="mt-8 text-xs text-[#7f93a3]">
           No cash prizes, wagering, or paid entry — this is a free XP ladder.
         </p>
       </div>

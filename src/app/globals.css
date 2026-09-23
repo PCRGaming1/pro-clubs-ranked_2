@@ -1,20 +1,24 @@
 @import "tailwindcss";
 
 /*
- * Pro Clubs Ranked brand tokens — black / neon green, esports-style.
- * Light values live on bare :root; dark overrides key off
- * prefers-color-scheme so the app matches the OS theme automatically
- * (Tailwind v4's `dark:` variant already targets that media query by
- * default, so no extra config is required).
+ * Pro Clubs Ranked brand tokens — blue / orange, esports-style (Sept 2026
+ * rebrand — see the "PCR Rebrand Concept" design board for the source
+ * mockup this maps to). Light values live on bare :root; dark overrides
+ * key off prefers-color-scheme so the app matches the OS theme
+ * automatically (Tailwind v4's `dark:` variant already targets that media
+ * query by default, so no extra config is required).
  *
- * Green is the one interactive accent (links, buttons, focus rings).
- * The navbar band is a fixed near-black regardless of light/dark mode,
- * so it reads as a deliberate brand block rather than shifting with the
- * page background.
+ * Blue is the primary interactive accent (links, active states, focus
+ * rings). Orange is reserved for primary calls-to-action (Sign up, main
+ * buttons) so they pop against the blue identity color, matching the
+ * crest/hero banner concept.
+ * The navbar band is a fixed near-black regardless of light/dark mode, so
+ * it reads as a deliberate brand block rather than shifting with the page
+ * background.
  *
- * --pcr-accent-strong is a bright/light neon green in both themes, so
- * text placed on top of it (buttons, CTAs) uses --pcr-accent-strong-fg
- * (near-black) instead of white — white would fail contrast against it.
+ * --pcr-accent-strong and --pcr-cta are bright/saturated in both themes,
+ * so text placed on top of them (buttons, CTAs) uses their paired -fg
+ * token (near-black) instead of white — white would fail contrast.
  */
 :root {
   --pcr-bg: #f4f7f4;
@@ -23,32 +27,38 @@
   --pcr-muted: #57635b;
   --pcr-border: #d8e0da;
 
-  --pcr-accent: #0e8f3e; /* green, tuned for light backgrounds */
-  --pcr-accent-strong: #17c957; /* green, high-contrast */
-  --pcr-accent-strong-fg: #06180d; /* near-black text on top of accent-strong */
+  --pcr-accent: #1a6fb8; /* blue, tuned for light backgrounds */
+  --pcr-accent-strong: #2f8fe0; /* blue, high-contrast */
+  --pcr-accent-strong-fg: #06141f; /* near-black text on top of accent-strong */
+  --pcr-cta: #b85f1f; /* orange CTA, tuned for light backgrounds */
+  --pcr-cta-strong: #e0762f; /* orange CTA, high-contrast */
+  --pcr-cta-strong-fg: #1a0f04; /* near-black text on top of cta-strong */
   --pcr-gold: #a97a12; /* XP / rank tiers — semantic, not a brand color */
   --pcr-success: #1f8a4c; /* confirmed / success states */
   --pcr-danger: #c23b3b;
 
-  /* Fixed near-black navbar band — same idea as before, new brand color: */
+  /* Fixed near-black navbar band — same idea as before, new brand colors: */
   --pcr-navbar-bg: #05080a;
   --pcr-navbar-fg: #eafcef;
   --pcr-navbar-muted: #7c9488;
-  --pcr-navbar-accent: #3cff6e;
-  --pcr-navbar-border: rgba(60, 255, 110, 0.14);
+  --pcr-navbar-accent: #4fa8ff;
+  --pcr-navbar-border: rgba(79, 168, 255, 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --pcr-bg: #05080a;
-    --pcr-bg-elevated: #0d1310;
-    --pcr-fg: #eafcef;
-    --pcr-muted: #8fa89a;
-    --pcr-border: #1c2620;
+    --pcr-bg: #05070a;
+    --pcr-bg-elevated: #0a1420;
+    --pcr-fg: #eef7f0;
+    --pcr-muted: #8fa0ac;
+    --pcr-border: #1c2630;
 
-    --pcr-accent: #39e469;
-    --pcr-accent-strong: #3cff6e; /* vivid neon */
-    --pcr-accent-strong-fg: #06180d; /* near-black — still needed, this green is vivid/light too */
+    --pcr-accent: #4fa8ff;
+    --pcr-accent-strong: #2f8fe0; /* vivid blue */
+    --pcr-accent-strong-fg: #06141f;
+    --pcr-cta: #e0762f;
+    --pcr-cta-strong: #f0883a;
+    --pcr-cta-strong-fg: #1a0f04;
     --pcr-gold: #d9ab34;
     --pcr-success: #35b56e;
     --pcr-danger: #e2645f;
@@ -56,8 +66,8 @@
     --pcr-navbar-bg: #05080a;
     --pcr-navbar-fg: #eafcef;
     --pcr-navbar-muted: #7c9488;
-    --pcr-navbar-accent: #3cff6e;
-    --pcr-navbar-border: rgba(60, 255, 110, 0.14);
+    --pcr-navbar-accent: #4fa8ff;
+    --pcr-navbar-border: rgba(79, 168, 255, 0.16);
   }
 }
 
