@@ -32,6 +32,9 @@ export default function SignupForm() {
       password,
       options: {
         data: { username },
+        // Where the confirmation link lands. /auth/confirm verifies the
+        // token, signs the user in and forwards them to the home page.
+        emailRedirectTo: `${window.location.origin}/auth/confirm?next=/`,
       },
     });
 
