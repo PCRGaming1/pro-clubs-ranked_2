@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -9,14 +8,14 @@ import {
   labelClass,
   primaryButtonClass,
   errorTextClass,
+  successTextClass,
 } from "@/components/form";
 
-export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
-  const router = useRouter();
+export default function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,20 +23,29 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
     setLoading(true);
 
     const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email,
-      password,
-    });
+      {
+        redirectTo: `${window.location.origin}/auth/confirm?next=/reset-password`,
+      }
+    );
 
     setLoading(false);
 
-    if (signInError) {
-      setError(signInError.message);
+    if (resetError) {
+      setError(resetError.message);
       return;
     }
+    setSent(true);
+  }
 
-    router.push(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/");
-    router.refresh();
+  if (sent) {
+    return (
+      <p className={successTextClass}>
+        If an account exists for that email, a reset link is on its way. Check
+        your inbox (and spam folder).
+      </p>
+    );
   }
 
   return (
@@ -56,37 +64,17 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
           placeholder="you@example.com"
         />
       </div>
-      <div>
-        <label className={labelClass} htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className={inputClass}
-          placeholder="••••••••"
-        />
-        <Link
-          href="/forgot-password"
-          className="inline-block mt-1 text-xs text-[var(--pcr-accent-strong)]"
-        >
-          Forgot password?
-        </Link>
-      </div>
 
       {error && <p className={errorTextClass}>{error}</p>}
 
       <button type="submit" disabled={loading} className={primaryButtonClass}>
-        {loading ? "Logging in…" : "Log in"}
+        {loading ? "Sending…" : "Send reset link"}
       </button>
 
       <p className="text-sm text-[var(--pcr-muted)]">
-        Need an account?{" "}
-        <Link href="/signup" className="text-[var(--pcr-accent-strong)]">
-          Sign up
+        Remembered it?{" "}
+        <Link href="/login" className="text-[var(--pcr-accent-strong)]">
+          Log in
         </Link>
       </p>
     </form>
