@@ -1,6 +1,8 @@
 import { getCurrentUser, getPlayerStatsForUser } from "@/lib/data";
 import EaPersonaLinkClient from "./EaPersonaLinkClient";
 
+export const metadata = { title: "My Profile" };
+
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {

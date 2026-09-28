@@ -1,5 +1,7 @@
 import SignupForm from "./SignupForm";
 
+export const metadata = { title: "Sign up" };
+
 export const dynamic = "force-dynamic";
 
 export default function SignupPage() {

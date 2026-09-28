@@ -11,6 +11,16 @@ import {
 import TierBadge from "@/components/TierBadge";
 import EaClubLinkClient from "./EaClubLinkClient";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const squad = await getSquadById(id);
+  return { title: squad?.name ?? "Squad" };
+}
+
 export const dynamic = "force-dynamic";
 
 export default async function SquadPage({

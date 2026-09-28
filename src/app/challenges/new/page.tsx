@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getCurrentUser, getSquadForUser } from "@/lib/data";
 import NewPostForm from "./NewPostForm";
 
+export const metadata = { title: "Post a Challenge" };
+
 export const dynamic = "force-dynamic";
 
 export default async function NewChallengePage() {

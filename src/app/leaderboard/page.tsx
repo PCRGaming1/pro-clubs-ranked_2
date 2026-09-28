@@ -4,6 +4,8 @@ import { MATCH_SIZES } from "@/lib/constants";
 import type { MatchSize } from "@/lib/database.types";
 import TierBadge from "@/components/TierBadge";
 
+export const metadata = { title: "Leaderboard" };
+
 export const dynamic = "force-dynamic";
 
 const TH =

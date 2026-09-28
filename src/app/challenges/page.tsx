@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getCurrentUser, getSquadForUser, getOpenMatchPosts } from "@/lib/data";
 import ChallengeBoardTable from "./ChallengeBoardTable";
 
+export const metadata = { title: "Challenge Board" };
+
 export const dynamic = "force-dynamic";
 
 export default async function ChallengesPage() {

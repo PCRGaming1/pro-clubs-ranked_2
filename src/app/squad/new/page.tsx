@@ -1,5 +1,7 @@
 import NewSquadForm from "./NewSquadForm";
 
+export const metadata = { title: "Create a Squad" };
+
 export const dynamic = "force-dynamic";
 
 export default function NewSquadPage() {

@@ -12,6 +12,8 @@ import TierBadge from "@/components/TierBadge";
 import ReportResultClient from "./ReportResultClient";
 import StatsClient from "./StatsClient";
 
+export const metadata = { title: "Match Details" };
+
 export const dynamic = "force-dynamic";
 
 export default async function MatchPage({
